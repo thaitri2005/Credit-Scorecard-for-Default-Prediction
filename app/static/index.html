@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Risk Scorecard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-chart-line"></i> Credit Risk Scorecard</h1>
+                <p>Predict loan default probability and generate credit scores</p>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <div class="form-container">
+                <form id="loanForm" class="loan-form">
+                    <div class="form-section">
+                        <h2><i class="fas fa-user"></i> Applicant Information</h2>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="annual_inc">
+                                    <i class="fas fa-dollar-sign"></i> Annual Income ($)
+                                </label>
+                                <input type="number" id="annual_inc" name="annual_inc" required 
+                                       placeholder="e.g., 75000" min="0" step="1000">
+                                <small>Enter your annual income in USD</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="int_rate">
+                                    <i class="fas fa-percentage"></i> Interest Rate (%)
+                                </label>
+                                <input type="number" id="int_rate" name="int_rate" step="0.01" required 
+                                       placeholder="e.g., 12.5" min="0" max="50">
+                                <small>Expected interest rate for the loan</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="credit_history_length">
+                                    <i class="fas fa-calendar-alt"></i> Credit History Length (years)
+                                </label>
+                                <input type="number" id="credit_history_length" name="credit_history_length" 
+                                       step="0.1" required placeholder="e.g., 5.5" min="0">
+                                <small>How long you've had credit accounts</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="purpose">
+                                    <i class="fas fa-bullseye"></i> Loan Purpose
+                                </label>
+                                <select id="purpose" name="purpose" required>
+                                    <option value="">Select Purpose</option>
+                                    <option value="credit_card">Credit Card</option>
+                                    <option value="debt_consolidation">Debt Consolidation</option>
+                                    <option value="home_improvement">Home Improvement</option>
+                                    <option value="car">Car</option>
+                                    <option value="educational">Educational</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                <small>Primary reason for the loan</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2><i class="fas fa-chart-bar"></i> Additional Information (Optional)</h2>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="total_rev_hi_lim">
+                                    <i class="fas fa-credit-card"></i> Total Revolving High Limit ($)
+                                </label>
+                                <input type="number" id="total_rev_hi_lim" name="total_rev_hi_lim" 
+                                       placeholder="e.g., 25000" min="0" step="1000">
+                                <small>Total credit limit across all revolving accounts</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="tot_cur_bal">
+                                    <i class="fas fa-balance-scale"></i> Total Current Balance ($)
+                                </label>
+                                <input type="number" id="tot_cur_bal" name="tot_cur_bal" 
+                                       placeholder="e.g., 5000" min="0" step="1000">
+                                <small>Current balance across all accounts</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="revol_util">
+                                    <i class="fas fa-percentage"></i> Revolving Utilization (%)
+                                </label>
+                                <input type="number" id="revol_util" name="revol_util" 
+                                       placeholder="e.g., 30" min="0" max="100" step="0.1">
+                                <small>Percentage of revolving credit being used</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="verification_status">
+                                    <i class="fas fa-check-circle"></i> Verification Status
+                                </label>
+                                <select id="verification_status" name="verification_status" required>
+                                    <option value="">Select Status</option>
+                                    <option value="verified">Verified</option>
+                                    <option value="source_verified">Source Verified</option>
+                                    <option value="not_verified">Not Verified</option>
+                                </select>
+                                <small>Income verification status</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary" id="submitBtn">
+                            <i class="fas fa-calculator"></i> Calculate Credit Score
+                        </button>
+                        <button type="button" class="btn-secondary" id="clearBtn">
+                            <i class="fas fa-eraser"></i> Clear Form
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="results" class="results hidden">
+                <div class="results-header">
+                    <h2><i class="fas fa-chart-pie"></i> Credit Assessment Results</h2>
+                    <button class="close-btn" id="closeResults">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="score-display">
+                    <div class="score-item main-score">
+                        <div class="score-label">Credit Score</div>
+                        <div id="creditScore" class="score-value"></div>
+                        <div class="score-description">Higher scores indicate lower risk</div>
+                    </div>
+                    
+                    <div class="score-item">
+                        <div class="score-label">Default Probability</div>
+                        <div id="defaultProb" class="prob-value"></div>
+                        <div class="score-description">Probability of loan default</div>
+                    </div>
+                    
+                    <div class="score-item">
+                        <div class="score-label">Risk Level</div>
+                        <div id="riskLevel" class="risk-value"></div>
+                        <div class="score-description">Overall risk assessment</div>
+                    </div>
+                </div>
+                
+                <div class="results-footer">
+                    <p id="resultMessage" class="result-message"></p>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 Credit Risk Scorecard API. Built with FastAPI and Machine Learning.</p>
+                <div class="footer-links">
+                    <a href="/docs" target="_blank"><i class="fas fa-book"></i> API Docs</a>
+                    <a href="/api/v1/health" target="_blank"><i class="fas fa-heartbeat"></i> Health Check</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <div id="loading" class="loading hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Calculating credit score...</p>
+        </div>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
