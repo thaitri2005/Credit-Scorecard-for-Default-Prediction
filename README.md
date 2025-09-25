@@ -156,7 +156,7 @@ The CI/CD pipeline performs the following steps:
 
 For more details, see the [GitHub Actions workflow](.github/workflows/deploy.yml).
 
-### Model Configuration
+## ⚙️ Model Configuration
 
 Logistic regression scorecard with WOE transformations. The model uses the following scoring parameters:
 
