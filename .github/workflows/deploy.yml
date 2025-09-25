@@ -75,7 +75,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           push: true
-          tags: your-dockerhub-username/credit-risk-api:latest
+          tags: thaitri2005/credit_scorecard_for_default_prediction:latest
 
   security-scan:
     runs-on: ubuntu-latest
