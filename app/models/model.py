@@ -190,7 +190,9 @@ class CreditRiskModel:
             except (ValueError, TypeError):
                 annual_inc = 0.0
             try:
-                processed["loan_burden"] = float(estimated_loan_amount) / (annual_inc + 1.0)
+                processed["loan_burden"] = float(estimated_loan_amount) / (
+                    annual_inc + 1.0
+                )
             except Exception:
                 processed["loan_burden"] = 0.0
 

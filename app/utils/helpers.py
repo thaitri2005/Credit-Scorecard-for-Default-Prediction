@@ -68,6 +68,7 @@ def validate_environment() -> bool:
     try:
         # Check if required environment variables are set
         from typing import List
+
         required_vars: List[str] = []
 
         missing_vars: List[str] = []
@@ -107,9 +108,7 @@ def get_logging_config() -> dict:
         "disable_existing_loggers": False,
         "formatters": {
             "default": {
-                "format": (
-                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-                ),
+                "format": ("%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "detailed": {
