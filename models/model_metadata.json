@@ -1,0 +1,28 @@
+{
+  "model_type": "LogisticRegression",
+  "features": [
+    "int_rate_woe",
+    "total_rev_hi_lim_woe",
+    "tot_cur_bal_woe",
+    "annual_inc_woe",
+    "purpose_woe",
+    "loan_burden_woe",
+    "credit_history_length_woe",
+    "revol_util_woe",
+    "verification_status_woe"
+  ],
+  "auc_score": 0.7187682058599049,
+  "ks_statistic": 0.32797506045721025,
+  "training_date": "2025-09-26 06:16:30",
+  "data_shape": {
+    "train_samples": 610866,
+    "test_samples": 261800,
+    "features": 9
+  },
+  "class_distribution": {
+    "good_borrowers": 811490,
+    "bad_borrowers": 61176,
+    "good_percentage": 92.98975782258047,
+    "bad_percentage": 7.01024217741954
+  }
+}
