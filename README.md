@@ -37,29 +37,34 @@ Credit Scorecard - Default Prediction/
 ### Local Development
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd credit-risk-scorecard
    ```
 
 2. **Create virtual environment**
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install dependencies**
+
    ```bash
    pip install -r requirements-dev.txt
    ```
 
 4. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
 5. **Run the application**
+
    ```bash
    python -m app.main
    ```
@@ -67,14 +72,15 @@ Credit Scorecard - Default Prediction/
 ### Docker Deployment
 
 1. **Build and run with Docker Compose**
+
    ```bash
    docker-compose -f docker/docker-compose.yml up --build
    ```
 
 2. **Access the application**
-   - API: http://localhost:8000
-   - Web UI: http://localhost:8000
-   - API Docs: http://localhost:8000/docs
+   - API: <http://localhost:8000>
+   - Web UI: <http://localhost:8000>
+   - API Docs: <http://localhost:8000/docs>
 
 ## 📚 API Documentation
 
@@ -134,16 +140,19 @@ pytest tests/test_api.py
 ### AWS ECS Deployment
 
 1. **Set up AWS credentials**
+
    ```bash
    aws configure
    ```
 
 2. **Create ECR repository**
+
    ```bash
    aws ecr create-repository --repository-name credit-risk-api
    ```
 
 3. **Create ECS cluster**
+
    ```bash
    aws ecs create-cluster --cluster-name credit-risk-cluster
    ```
@@ -157,11 +166,13 @@ pytest tests/test_api.py
 ### Manual Docker Deployment
 
 1. **Build image**
+
    ```bash
    docker build -t credit-risk-api -f docker/Dockerfile .
    ```
 
 2. **Run container**
+
    ```bash
    docker run -p 8000:8000 credit-risk-api
    ```
@@ -182,6 +193,7 @@ pytest tests/test_api.py
 ### Model Configuration
 
 The model uses the following scoring parameters:
+
 - **PDO (Points to Double Odds)**: 20
 - **Base Score**: 600
 - **Base Odds**: 50:1
@@ -189,12 +201,14 @@ The model uses the following scoring parameters:
 ## 📊 Model Features
 
 ### Required Features
+
 - `annual_inc`: Annual income
 - `int_rate`: Interest rate
 - `purpose`: Loan purpose
 - `verification_status`: Income verification status
 
 ### Optional Features
+
 - `total_rev_hi_lim`: Total revolving high limit
 - `tot_cur_bal`: Total current balance
 - `loan_burden`: Loan burden ratio
@@ -217,6 +231,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🆘 Support
 
 For support and questions:
+
 - Create an issue on GitHub
 - Check the API documentation at `/docs`
 - Review the test cases for usage examples
