@@ -1,35 +1,35 @@
-# Credit Risk Scorecard API
+# Credit Risk Scorecard for Default Prediction
 
-A FastAPI-based credit risk scorecard application that predicts loan default probability and generates credit scores using Weight of Evidence (WOE) transformations and logistic regression.
+A **FastAPI-based** credit risk scorecard application that predicts loan default probability and generates credit scores using Weight of Evidence (WOE) transformations and logistic regression.
 
 ## 🚀 Features
 
-- **Credit Score Prediction**: Calculate credit scores based on loan application data
-- **Risk Assessment**: Determine default probability and risk levels
-- **WOE Transformations**: Industry-standard Weight of Evidence feature engineering
-- **RESTful API**: Clean, documented API endpoints
-- **Web UI**: Simple, responsive web interface
-- **Docker Support**: Containerized deployment
-- **AWS ECS Ready**: Pre-configured for AWS deployment
-- **CI/CD Pipeline**: Automated testing and deployment
+- **Credit Score Prediction**: Calculate credit scores based on loan application data  
+- **Risk Assessment**: Default probability + risk level classification  
+- **WOE Transformations**: Industry-standard Weight of Evidence feature engineering  
+- **RESTful API**: Clean, documented API endpoints (`/docs` for Swagger UI)  
+- **Web UI**: Simple responsive frontend (`index.html`, `app.js`, `style.css`)  
+- **Dockerized**: Build and run anywhere with Docker  
+- **CI/CD**: GitHub Actions pipeline (linting, type checking, tests, security scan, Docker Hub push)
+
+---
 
 ## 📁 Project Structure
 
-```
+```bash
 Credit Scorecard - Default Prediction/
-├── app/                          # FastAPI application
-│   ├── main.py                   # Application entry point
-│   ├── models/                   # ML model classes
-│   ├── api/                      # API routes and schemas
-│   ├── utils/                    # Utility functions
-│   └── static/                   # Web UI files
-├── data/                         # Data files
-├── notebooks/                    # Jupyter notebooks
-├── scripts/                      # Training scripts
-├── tests/                        # Test files
-├── docker/                       # Docker configuration
-├── .github/workflows/            # CI/CD pipelines
-└── requirements.txt              # Dependencies
+├── app/ # FastAPI app
+│ ├── main.py # App entrypoint
+│ ├── api/ # Routes & schemas
+│ ├── models/ # Model logic
+│ ├── utils/ # Helper functions
+│ └── static/ # Web UI files
+├── tests/ # Unit & integration tests
+├── Dockerfile # Docker build
+├── docker-compose.yml # Local multi-service run
+├── requirements.txt # Runtime deps
+├── requirements-dev.txt # Dev/test deps
+└── .github/workflows/ci.yml # CI/CD pipeline
 ```
 
 ## 🛠️ Installation
@@ -56,25 +56,32 @@ Credit Scorecard - Default Prediction/
    pip install -r requirements-dev.txt
    ```
 
-4. **Set up environment variables**
+4. **Run the application**
 
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-5. **Run the application**
-
-   ```bash
-   python -m app.main
+   uvicorn app.main:app --reload
    ```
 
 ### Docker Deployment
 
-1. **Build and run with Docker Compose**
+1. **Build and run locally**
 
    ```bash
-   docker-compose -f docker/docker-compose.yml up --build
+   docker build -t credit-risk-api .
+   docker run -p 8000:8000 credit-risk-api
+   ```
+
+   or with Compose:
+
+   ```bash
+   docker-compose up --build
+   ```
+
+   or pull prebuilt image (from Docker Hub CI/CD)
+
+   ```bash
+   docker pull thaitri2005/credit_scorecard_for_default_prediction:latest
+   docker run -p 8000:8000 thaitri2005/credit_scorecard_for_default_prediction:latest
    ```
 
 2. **Access the application**
@@ -125,74 +132,33 @@ curl -X POST "http://localhost:8000/api/v1/predict" \
 Run the test suite:
 
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
+pytest -v
 pytest --cov=app --cov-report=html
-
-# Run specific test file
-pytest tests/test_api.py
 ```
 
-## 🚀 Deployment
+**CI automatically runs:**
 
-### AWS ECS Deployment
+- `black` (format check)
+- `flake8` (lint)
+- `mypy` (type check)
+- `pytest` (unit/integration tests)
+- `Trivy` (security scan)
 
-1. **Set up AWS credentials**
+## 🔄 CI/CD Workflow
 
-   ```bash
-   aws configure
-   ```
+The CI/CD pipeline performs the following steps:
 
-2. **Create ECR repository**
+1. **Triggered on every push to `main`**
+2. **Runs full test suite**
+3. **Builds Docker image**
+4. **Pushes Docker image to Docker Hub**  
+   Repository: [`thaitri2005/credit_scorecard_for_default_prediction:latest`](https://hub.docker.com/r/thaitri2005/credit_scorecard_for_default_prediction)
 
-   ```bash
-   aws ecr create-repository --repository-name credit-risk-api
-   ```
-
-3. **Create ECS cluster**
-
-   ```bash
-   aws ecs create-cluster --cluster-name credit-risk-cluster
-   ```
-
-4. **Configure GitHub secrets**
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-
-5. **Push to main branch to trigger deployment**
-
-### Manual Docker Deployment
-
-1. **Build image**
-
-   ```bash
-   docker build -t credit-risk-api -f docker/Dockerfile .
-   ```
-
-2. **Run container**
-
-   ```bash
-   docker run -p 8000:8000 credit-risk-api
-   ```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `ENVIRONMENT` | Environment (development/production) | `development` |
-| `DEBUG` | Enable debug mode | `true` |
-| `LOG_LEVEL` | Logging level | `INFO` |
-| `HOST` | Server host | `0.0.0.0` |
-| `PORT` | Server port | `8000` |
-| `MODEL_PATH` | Path to trained model | `models/trained_model.pkl` |
+For more details, see the [GitHub Actions workflow](.github/workflows/deploy.yml).
 
 ### Model Configuration
 
-The model uses the following scoring parameters:
+Logistic regression scorecard with WOE transformations. The model uses the following scoring parameters:
 
 - **PDO (Points to Double Odds)**: 20
 - **Base Score**: 600
@@ -235,9 +201,3 @@ For support and questions:
 - Create an issue on GitHub
 - Check the API documentation at `/docs`
 - Review the test cases for usage examples
-
-## 🔄 Version History
-
-- **v1.0.0**: Initial release with basic credit scoring functionality
-- **v1.1.0**: Added batch prediction support
-- **v1.2.0**: Enhanced UI and error handling
