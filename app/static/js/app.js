@@ -348,7 +348,7 @@ function fillSampleData() {
         total_rev_hi_lim: 25000,
         tot_cur_bal: 5000,
         revol_util: 30,
-        verification_status: 'verified',
+        verification_status: 'Verified',
         loan_amount: 15000
     };
     

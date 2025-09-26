@@ -1,7 +1,5 @@
 # Credit Risk Scorecard for Default Prediction
 
-![App Screenshot](screenshot.png)
-
 A **FastAPI-based web application** built from my Kaggle notebook [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction).  
 The notebook explains the **entire pipeline, model building, and evaluation process**. This repository takes that work and implements it as a **production-ready API + webapp**.
 
