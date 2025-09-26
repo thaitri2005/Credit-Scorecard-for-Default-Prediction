@@ -18,18 +18,22 @@ A **FastAPI-based** credit risk scorecard application that predicts loan default
 
 ```bash
 Credit Scorecard - Default Prediction/
-├── app/ # FastAPI app
-│ ├── main.py # App entrypoint
-│ ├── api/ # Routes & schemas
-│ ├── models/ # Model logic
-│ ├── utils/ # Helper functions
-│ └── static/ # Web UI files
-├── tests/ # Unit & integration tests
-├── Dockerfile # Docker build
-├── docker-compose.yml # Local multi-service run
-├── requirements.txt # Runtime deps
-├── requirements-dev.txt # Dev/test deps
-└── .github/workflows/ci.yml # CI/CD pipeline
+├── app/                      # FastAPI application
+│   ├── main.py               # App entrypoint (creates FastAPI instance)
+│   ├── api/                  # API layer: routes & request/response schemas
+│   │   ├── routes.py
+│   │   └── schemas.py
+│   ├── utils/                # Helper utilities
+│   │   └── helpers.py
+│   └── static/               # Static files for web UI (HTML, CSS, JS, assets)
+├── tests/                    # Unit & integration tests│
+├── Dockerfile                # Docker build file
+├── docker-compose.yml        # Local multi-service configuration
+├── requirements.txt          # Runtime dependencies
+├── requirements-dev.txt      # Development & test dependencies
+└── .github/
+    └── workflows/
+        └── ci.yml            # CI/CD pipeline
 ```
 
 ## 🛠️ Installation

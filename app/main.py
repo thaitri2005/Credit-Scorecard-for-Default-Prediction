@@ -46,7 +46,6 @@ async def lifespan(app: FastAPI):
     logger.info("🛑 Shutting down Credit Risk Scorecard API")
 
 
-
 # Create FastAPI app
 app = FastAPI(
     title="Credit Risk Scorecard API",

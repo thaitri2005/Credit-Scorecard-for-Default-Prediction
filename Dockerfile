@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY app/ ./app/
 COPY data/ ./data/
+COPY models/ ./models/
 
 RUN mkdir -p logs
 
@@ -58,6 +59,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application code
 COPY app/ ./app/
 COPY data/ ./data/
+COPY models/ ./models/
 
 # Create logs directory
 RUN mkdir -p logs

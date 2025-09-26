@@ -1,14 +1,24 @@
 from fastapi import APIRouter, HTTPException, Depends
-import logging, time
+import logging
+import time
 from datetime import datetime
-from app.api.schemas import LoanApplicationRequest, CreditScoreResponse, HealthResponse, ModelInfoResponse, BatchPredictionRequest, BatchPredictionResponse
+from app.api.schemas import (
+    LoanApplicationRequest,
+    CreditScoreResponse,
+    HealthResponse,
+    ModelInfoResponse,
+    BatchPredictionRequest,
+    BatchPredictionResponse,
+)
 from app.utils.helpers import get_model_instance, CreditRiskService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
 def get_model() -> CreditRiskService:
     return get_model_instance()
+
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -29,6 +39,7 @@ async def health_check():
             timestamp=datetime.now().isoformat(),
         )
 
+
 @router.post("/predict", response_model=CreditScoreResponse)
 async def predict_credit_score(
     request: LoanApplicationRequest, model: CreditRiskService = Depends(get_model)
@@ -36,25 +47,45 @@ async def predict_credit_score(
     try:
         start = time.time()
         result = model.predict(request.dict())
-        return CreditScoreResponse(**result, message=f"Prediction completed in {time.time()-start:.3f}s")
+        return CreditScoreResponse(
+            **result, message=f"Prediction completed in {time.time() - start:.3f}s"
+        )
     except Exception as e:
         logger.error(f"Prediction failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
 
 @router.post("/predict/batch", response_model=BatchPredictionResponse)
 async def predict_batch(
     request: BatchPredictionRequest, model: CreditRiskService = Depends(get_model)
 ):
+    start = time.time()
     results = []
     for app in request.applications:
         try:
-            results.append(CreditScoreResponse(**model.predict(app.dict()), message="Batch prediction completed"))
+            results.append(
+                CreditScoreResponse(
+                    **model.predict(app.dict()), message="Batch prediction completed"
+                )
+            )
         except Exception as e:
-            results.append(CreditScoreResponse(
-                credit_score=0, default_probability=1, risk_level="Error", log_odds=None, message=str(e)
-            ))
-    return BatchPredictionResponse(predictions=results, total_applications=len(request.applications))
-    
+            results.append(
+                CreditScoreResponse(
+                    credit_score=0,
+                    default_probability=1,
+                    risk_level="Error",
+                    log_odds=None,
+                    message=str(e),
+                )
+            )
+    processing_time = time.time() - start
+    return BatchPredictionResponse(
+        predictions=results,
+        total_applications=len(request.applications),
+        processing_time=processing_time,
+    )
+
+
 @router.get("/model/info", response_model=ModelInfoResponse)
 async def get_model_info(model: CreditRiskService = Depends(get_model)):
     return ModelInfoResponse(
