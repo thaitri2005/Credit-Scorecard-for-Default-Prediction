@@ -33,7 +33,7 @@ Credit Scorecard - Default Prediction/
 ├── requirements-dev.txt      # Development & test dependencies
 └── .github/
     └── workflows/
-        └── ci.yml            # CI/CD pipeline
+        └── deploy.yml            # CI/CD pipeline
 ```
 
 ## 🛠️ Installation
