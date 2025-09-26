@@ -1,16 +1,21 @@
 # Credit Risk Scorecard for Default Prediction
 
-A **FastAPI-based** credit risk scorecard application that predicts loan default probability and generates credit scores using Weight of Evidence (WOE) transformations and logistic regression.
+![App Screenshot](app/static/screenshot.png)
+
+A **FastAPI-based web application** built from my Kaggle notebook [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction).  
+The notebook explains the **entire pipeline, model building, and evaluation process**. This repository takes that work and implements it as a **production-ready API + webapp**.
+
+---
 
 ## 🚀 Features
 
-- **Credit Score Prediction**: Calculate credit scores based on loan application data  
-- **Risk Assessment**: Default probability + risk level classification  
-- **WOE Transformations**: Industry-standard Weight of Evidence feature engineering  
-- **RESTful API**: Clean, documented API endpoints (`/docs` for Swagger UI)  
-- **Web UI**: Simple responsive frontend (`index.html`, `app.js`, `style.css`)  
-- **Dockerized**: Build and run anywhere with Docker  
-- **CI/CD**: GitHub Actions pipeline (linting, type checking, tests, security scan, Docker Hub push)
+- **Credit Score Prediction**: Logistic regression–based credit scoring with WOE transformation  
+- **Risk Assessment**: Default probability + credit risk classification  
+- **WOE Transformations**: Industry-standard feature engineering for scorecards  
+- **RESTful API**: Endpoints exposed via FastAPI (`/docs` for Swagger UI)  
+- **Web UI**: Responsive frontend (HTML/CSS/JS) for user-friendly scoring  
+- **Dockerized**: Easy deployment with Docker or Docker Compose  
+- **CI/CD**: Automated tests, linting, type checking, vulnerability scan, and Docker Hub push  
 
 ---
 
@@ -19,56 +24,54 @@ A **FastAPI-based** credit risk scorecard application that predicts loan default
 ```bash
 Credit Scorecard - Default Prediction/
 ├── app/                      # FastAPI application
-│   ├── main.py               # App entrypoint (creates FastAPI instance)
-│   ├── api/                  # API layer: routes & request/response schemas
+│   ├── main.py               # App entrypoint
+│   ├── api/                  # API layer: routes & schemas
 │   │   ├── routes.py
 │   │   └── schemas.py
 │   ├── utils/                # Helper utilities
 │   │   └── helpers.py
-│   └── static/               # Static files for web UI (HTML, CSS, JS, assets)
-├── tests/                    # Unit & integration tests│
-├── Dockerfile                # Docker build file
-├── docker-compose.yml        # Local multi-service configuration
-├── requirements.txt          # Runtime dependencies
-├── requirements-dev.txt      # Development & test dependencies
+│   └── static/               # Web UI (HTML, CSS, JS, assets)
+├── tests/                    # Unit & integration tests
+├── models/                   # Exported pipeline, model, scorecard, metadata
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── requirements-dev.txt
 └── .github/
     └── workflows/
         └── deploy.yml            # CI/CD pipeline
 ```
 
+---
+
+📚 Background
+
+This project is based on the Kaggle notebook:
+👉 [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction)
+
+The data preparation, WOE binning, and logistic regression model training are all explained in the notebook.
+
+The exported preprocessing pipeline, trained model, and scorecard are taken from that notebook.
+
+This repository focuses on wrapping the trained pipeline + model into a FastAPI application, with a frontend and Dockerized CI/CD pipeline for real-world usage.
+
+---
+
 ## 🛠️ Installation
 
 ### Local Development
 
-1. **Clone the repository**
+```bash
+git clone https://github.com/thaitri2005/Credit-Scorecard-for-Default-Prediction.git
+cd credit-risk-scorecard
+python -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload
 
-   ```bash
-   git clone <repository-url>
-   cd credit-risk-scorecard
-   ```
-
-2. **Create virtual environment**
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
-
-   ```bash
-   pip install -r requirements-dev.txt
-   ```
-
-4. **Run the application**
-
-   ```bash
-   uvicorn app.main:app --reload
-   ```
+```
 
 ### Docker Deployment
-
-1. **Build and run locally**
 
    ```bash
    docker build -t credit-risk-api .
@@ -88,10 +91,7 @@ Credit Scorecard - Default Prediction/
    docker run -p 8000:8000 thaitri2005/credit_scorecard_for_default_prediction:latest
    ```
 
-2. **Access the application**
-   - API: <http://localhost:8000>
-   - Web UI: <http://localhost:8000>
-   - API Docs: <http://localhost:8000/docs>
+---
 
 ## 📚 API Documentation
 
@@ -131,34 +131,20 @@ curl -X POST "http://localhost:8000/api/v1/predict" \
 }
 ```
 
-## 🧪 Testing
-
-Run the test suite:
-
-```bash
-pytest -v
-pytest --cov=app --cov-report=html
-```
-
-**CI automatically runs:**
-
-- `black` (format check)
-- `flake8` (lint)
-- `mypy` (type check)
-- `pytest` (unit/integration tests)
-- `Trivy` (security scan)
+---
 
 ## 🔄 CI/CD Workflow
 
 The CI/CD pipeline performs the following steps:
 
-1. **Triggered on every push to `main`**
-2. **Runs full test suite**
-3. **Builds Docker image**
-4. **Pushes Docker image to Docker Hub**  
-   Repository: [`thaitri2005/credit_scorecard_for_default_prediction:latest`](https://hub.docker.com/r/thaitri2005/credit_scorecard_for_default_prediction)
+1. Run linting, type checks, and unit tests
+2. Run security scan with Trivy
+3. Build Docker image
+4. Push image to Docker Hub
 
 For more details, see the [GitHub Actions workflow](.github/workflows/deploy.yml).
+
+---
 
 ## 📊 Model Features
 
@@ -172,6 +158,8 @@ For more details, see the [GitHub Actions workflow](.github/workflows/deploy.yml
 - `revol_util`: Revolving utilization
 - `credit_history_length`: Credit history length
 
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -181,9 +169,13 @@ For more details, see the [GitHub Actions workflow](.github/workflows/deploy.yml
 5. Run the test suite
 6. Submit a pull request
 
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
 
 ## 🆘 Support
 
