@@ -80,22 +80,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Build Docker image
+        run: docker build -t credit-risk-api:test .
+
       - name: Run Trivy (SARIF output)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: credit-risk-api:test
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          exit-code: '0'             # ✅ do not fail the build on vulns
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+            image-ref: credit-risk-api:test
+            format: 'sarif'
+            output: 'trivy-results.sarif'
+            exit-code: '0'
+            ignore-unfixed: true
+            vuln-type: 'os,library'
+            severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+            sarif_file: 'trivy-results.sarif'
 
   docker-security:
     runs-on: ubuntu-latest
