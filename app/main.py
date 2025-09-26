@@ -19,11 +19,23 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
-    logger.info("Starting Credit Risk Scorecard API")
+    logger.info("🚀 Starting Credit Risk Scorecard API")
 
     # Validate environment
     if not validate_environment():
-        logger.warning("Environment validation failed, but continuing startup")
+        logger.warning("⚠️ Environment validation failed, but continuing startup")
+
+    # Check for model artifacts
+    required_files = [
+        "models/credit_risk_model.joblib",
+        "models/preprocessing_pipeline.joblib",
+        "models/model_metadata.json",
+    ]
+    for f in required_files:
+        if not os.path.exists(f):
+            logger.warning(f"⚠️ Missing required artifact: {f}")
+        else:
+            logger.info(f"✅ Found artifact: {f}")
 
     # Create static directory if it doesn't exist
     os.makedirs("app/static", exist_ok=True)
@@ -31,7 +43,8 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("Shutting down Credit Risk Scorecard API")
+    logger.info("🛑 Shutting down Credit Risk Scorecard API")
+
 
 
 # Create FastAPI app

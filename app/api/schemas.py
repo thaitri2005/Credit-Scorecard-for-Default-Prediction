@@ -15,11 +15,11 @@ class LoanPurpose(str, Enum):
 
 
 class VerificationStatus(str, Enum):
-    """Enum for verification status"""
+    """Enum for verification status (matches training data labels)"""
 
-    VERIFIED = "verified"
-    SOURCE_VERIFIED = "source_verified"
-    NOT_VERIFIED = "not_verified"
+    VERIFIED = "Verified"
+    SOURCE_VERIFIED = "Source Verified"
+    NOT_VERIFIED = "Not Verified"
 
 
 class LoanApplicationRequest(BaseModel):
