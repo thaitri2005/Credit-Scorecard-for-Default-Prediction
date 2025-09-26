@@ -160,25 +160,12 @@ The CI/CD pipeline performs the following steps:
 
 For more details, see the [GitHub Actions workflow](.github/workflows/deploy.yml).
 
-## ⚙️ Model Configuration
-
-Logistic regression scorecard with WOE transformations. The model uses the following scoring parameters:
-
-- **PDO (Points to Double Odds)**: 20
-- **Base Score**: 600
-- **Base Odds**: 50:1
-
 ## 📊 Model Features
-
-### Required Features
 
 - `annual_inc`: Annual income
 - `int_rate`: Interest rate
 - `purpose`: Loan purpose
 - `verification_status`: Income verification status
-
-### Optional Features
-
 - `total_rev_hi_lim`: Total revolving high limit
 - `tot_cur_bal`: Total current balance
 - `loan_burden`: Loan burden ratio
