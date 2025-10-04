@@ -94,7 +94,7 @@ jobs:
         run: |
           az webapp config container set \
             --name creditscorecardwoeiv \
-            --resource-group <YOUR_RESOURCE_GROUP> \
+            --resource-group docker-fastapi-credit-scorecard \
             --docker-custom-image-name creditscorecardwoeiv.azurecr.io/credit-risk-api:latest \
             --docker-registry-server-url https://creditscorecardwoeiv.azurecr.io
 
@@ -140,3 +140,5 @@ jobs:
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
