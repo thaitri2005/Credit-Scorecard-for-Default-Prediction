@@ -54,7 +54,7 @@ jobs:
           flags: unittests
           name: codecov-umbrella
 
-  build-and-push-docker:
+  build-and-push:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
