@@ -1,19 +1,31 @@
-# Credit Risk Scorecard for Default Prediction
+# 💳 Credit Risk Scorecard for Default Prediction
 
-A **FastAPI-based web application** built from my Kaggle notebook [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction).  
-The notebook explains the **entire pipeline, model building, and evaluation process**. This repository takes that work and implements it as a **production-ready API + webapp**.
+A **FastAPI-based web application** for **credit default risk prediction**, adapted from my Kaggle notebook  
+👉 [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction).
+
+The notebook covers the **entire modeling pipeline**, while this repository turns that work into a **production-ready, Dockerized API + Web UI** with **CI/CD automation** and **Azure Cloud deployment**.
+
+---
+
+## 🚀 Live Deployment
+
+**🌐 Production App (Azure):**  
+🔗 [https://creditscorecardwoeiv-bgc3edb0fzgzdzfg.eastasia-01.azurewebsites.net/](https://creditscorecardwoeiv-bgc3edb0fzgzdzfg.eastasia-01.azurewebsites.net/)
+
+> ⚙️ *Startup may take 30–60 seconds on first access (free tier cold start).*
 
 ---
 
 ## 🚀 Features
 
-- **Credit Score Prediction**: Logistic regression–based credit scoring with WOE transformation  
-- **Risk Assessment**: Default probability + credit risk classification  
-- **WOE Transformations**: Industry-standard feature engineering for scorecards  
-- **RESTful API**: Endpoints exposed via FastAPI (`/docs` for Swagger UI)  
-- **Web UI**: Responsive frontend (HTML/CSS/JS) for user-friendly scoring  
-- **Dockerized**: Easy deployment with Docker or Docker Compose  
-- **CI/CD**: Automated tests, linting, type checking, vulnerability scan, and Docker Hub push  
+- **Credit Score Prediction** using a Logistic Regression model with **Weight of Evidence (WOE)** transformation  
+- **Default Risk Assessment**: Predicts probability + credit category  
+- **Preprocessing Pipeline** (feature binning, scaling, encoding)  
+- **RESTful API** built with FastAPI  
+- **Interactive Swagger Docs** at `/docs`  
+- **Responsive Web UI** for non-technical users  
+- **Dockerized Deployment** via Azure App Service or Docker Compose  
+- **Full CI/CD Workflow** using GitHub Actions (lint → test → build → push → deploy)
 
 ---
 
@@ -73,7 +85,7 @@ uvicorn app.main:app --reload
 
    ```bash
    docker build -t credit-risk-api .
-   docker run -p 8000:8000 credit-risk-api
+   docker run -p 8000:80 credit-risk-api
    ```
 
    or with Compose:
@@ -86,7 +98,7 @@ uvicorn app.main:app --reload
 
    ```bash
    docker pull thaitri2005/credit_scorecard_for_default_prediction:latest
-   docker run -p 8000:8000 thaitri2005/credit_scorecard_for_default_prediction:latest
+   docker run -p 8000:80 thaitri2005/credit_scorecard_for_default_prediction:latest
    ```
 
 ---
@@ -135,10 +147,12 @@ curl -X POST "http://localhost:8000/api/v1/predict" \
 
 The CI/CD pipeline performs the following steps:
 
-1. Run linting, type checks, and unit tests
-2. Run security scan with Trivy
-3. Build Docker image
-4. Push image to Docker Hub
+1. Lint & Type Check
+2. Run Unit Tests
+3. Security Scan (Trivy)
+4. Build Docker Image
+5. Push to Azure Container Registry
+6. Deploy to Azure Web App (App Service)
 
 For more details, see the [GitHub Actions workflow](.github/workflows/deploy.yml).
 
