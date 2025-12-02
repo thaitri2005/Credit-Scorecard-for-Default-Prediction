@@ -209,18 +209,28 @@ class CreditRiskUI {
             messageEl.textContent = result.message;
         }
         
-        // Style risk level
+        // Style risk level based on credit rating
         const riskEl = document.getElementById('riskLevel');
         riskEl.className = 'risk-value';
         
-        if (result.risk_level.includes('Low')) {
-            riskEl.style.background = '#27ae60';
+        // Investment grade (AAA-BBB) - Green shades
+        if (['AAA', 'AA', 'A', 'BBB'].includes(result.risk_level)) {
+            riskEl.style.background = '#27ae60';  // Green
             riskEl.style.color = 'white';
-        } else if (result.risk_level.includes('Medium')) {
-            riskEl.style.background = '#f39c12';
+        }
+        // Speculative grade (BB-B) - Yellow/Orange shades
+        else if (['BB', 'B'].includes(result.risk_level)) {
+            riskEl.style.background = '#f39c12';  // Orange
             riskEl.style.color = 'white';
-        } else {
-            riskEl.style.background = '#e74c3c';
+        }
+        // High risk (CCC-CC) - Dark orange/Red shades
+        else if (['CCC', 'CC'].includes(result.risk_level)) {
+            riskEl.style.background = '#e67e22';  // Dark orange
+            riskEl.style.color = 'white';
+        }
+        // Very high risk (C-D) - Red
+        else {
+            riskEl.style.background = '#e74c3c';  // Red
             riskEl.style.color = 'white';
         }
         

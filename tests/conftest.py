@@ -34,7 +34,7 @@ class FakeCreditRiskService:
         return {
             "credit_score": 650.0,
             "default_probability": 0.1,
-            "risk_level": "Medium Risk",
+            "risk_level": "A",  # Score 650 maps to "A" rating
             "log_odds": -2.1972,
         }
 

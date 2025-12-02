@@ -20,7 +20,7 @@ def test_predict_ok(client):
     data = res.json()
     assert data["credit_score"] == 650.0
     assert data["default_probability"] == 0.1
-    assert data["risk_level"] == "Medium Risk"
+    assert data["risk_level"] == "A"  # Score 650 maps to "A" rating
     assert "message" in data
 
 
@@ -77,7 +77,7 @@ def test_predict_batch_mixed_results(client):
     assert body["total_applications"] == 2
     preds = body["predictions"]
     assert len(preds) == 2
-    assert preds[0]["risk_level"] == "Medium Risk"
+    assert preds[0]["risk_level"] == "A"  # Score 650 maps to "A" rating
     assert preds[1]["risk_level"] == "Error"
 
 

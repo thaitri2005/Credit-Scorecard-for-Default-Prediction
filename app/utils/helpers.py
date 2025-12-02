@@ -420,19 +420,28 @@ class CreditRiskService:
         log_odds = np.log(prob / (1 - prob + 1e-9))
         score = offset - factor * log_odds
 
-        # --- risk level from probability (not raw score) ---
-        prob_bands = self.metadata.get(
-            "risk_prob_thresholds",
-            {"low": 0.05, "medium": 0.15, "high": 0.30},  # defaults
-        )
-        if prob < prob_bands["low"]:
-            risk_level = "Low Risk"
-        elif prob < prob_bands["medium"]:
-            risk_level = "Medium Risk"
-        elif prob < prob_bands["high"]:
-            risk_level = "High Risk"
+        # --- risk level from credit score (standard credit rating scale) ---
+        # Map credit score to standard S&P/Moody's/Fitch rating scale
+        if score >= 750:
+            risk_level = "AAA"
+        elif score >= 700:
+            risk_level = "AA"
+        elif score >= 650:
+            risk_level = "A"
+        elif score >= 600:
+            risk_level = "BBB"
+        elif score >= 550:
+            risk_level = "BB"
+        elif score >= 500:
+            risk_level = "B"
+        elif score >= 450:
+            risk_level = "CCC"
+        elif score >= 400:
+            risk_level = "CC"
+        elif score >= 350:
+            risk_level = "C"
         else:
-            risk_level = "Very High Risk"
+            risk_level = "D"
 
         return {
             "credit_score": round(score, 2),
