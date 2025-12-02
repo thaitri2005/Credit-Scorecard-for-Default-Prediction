@@ -417,13 +417,13 @@ class CreditRiskService:
 
         factor = pdo / np.log(2)
         offset = base_score - factor * np.log(base_odds)
-        
+
         # Clamp probability to avoid numerical issues at extremes
         # This prevents log(0) or log(inf) issues
         prob_clamped = np.clip(prob, 1e-6, 1 - 1e-6)
         log_odds = np.log(prob_clamped / (1 - prob_clamped))
         score = offset - factor * log_odds
-        
+
         # Clamp score to reasonable bounds (typical credit score range: 300-900)
         # This ensures scores stay within interpretable range
         score = np.clip(score, 300, 900)

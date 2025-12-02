@@ -19,7 +19,8 @@ The notebook covers the **entire modeling pipeline**, while this repository turn
 ## 🚀 Features
 
 - **Credit Score Prediction** using a Logistic Regression model with **Weight of Evidence (WOE)** transformation  
-- **Default Risk Assessment**: Predicts probability + credit category  
+- **Industry-Standard Credit Ratings**: Assigns **S&P/Moody's/Fitch-style ratings** (AAA, AA, A, BBB, BB, B, CCC, CC, C, D) based on credit score  
+- **Default Risk Assessment**: Predicts default probability + standardized credit rating  
 - **Preprocessing Pipeline** (feature binning, scaling, encoding)  
 - **RESTful API** built with FastAPI  
 - **Interactive Swagger Docs** at `/docs`  
@@ -135,11 +136,66 @@ curl -X POST "http://localhost:8000/api/v1/predict" \
 {
   "credit_score": 650.25,
   "default_probability": 0.1234,
-  "risk_level": "Medium Risk",
+  "risk_level": "A",
   "log_odds": -1.9876,
   "message": "Prediction completed successfully"
 }
 ```
+
+> **Note**: The `risk_level` field uses industry-standard credit ratings (AAA, AA, A, BBB, BB, B, CCC, CC, C, D) based on the calculated credit score, following S&P/Moody's/Fitch rating conventions.
+
+---
+
+## 📈 Scoring Methodology
+
+This application follows **industry-standard credit scoring practices**:
+
+### Credit Score Calculation
+
+The credit score is calculated using the standard **scorecard transformation formula**:
+
+```text
+Score = Offset - Factor × log(odds)
+```
+
+Where:
+
+- **Factor** = PDO / ln(2) (Points to Double Odds, typically 20)
+- **Offset** = BaseScore - Factor × ln(BaseOdds)
+- **log(odds)** = ln(probability / (1 - probability))
+
+**Default Parameters:**
+
+- PDO (Points to Double Odds): 20
+- Base Score: 600
+- Base Odds: 50:1 (Good:Bad ratio)
+
+### Risk Level Assignment
+
+Risk levels are assigned using **industry-standard credit ratings** based on the calculated credit score:
+
+| Credit Score | Rating | Risk Level |
+|-------------|--------|------------|
+| ≥ 750 | AAA | Highest quality, minimal default risk |
+| 700-749 | AA | Very high quality, very low default risk |
+| 650-699 | A | High quality, low default risk |
+| 600-649 | BBB | Good quality, moderate default risk |
+| 550-599 | BB | Speculative, elevated default risk |
+| 500-549 | B | Highly speculative, material default risk |
+| 450-499 | CCC | Substantial credit risk |
+| 400-449 | CC | Very high credit risk |
+| 350-399 | C | Near default |
+| < 350 | D | Default |
+
+This rating system aligns with **S&P, Moody's, and Fitch** credit rating scales, providing familiar and interpretable risk assessments for financial professionals.
+
+### Calculation Flow
+
+The prediction pipeline follows this sequence:
+
+1. **Model Prediction** → Default probability (0-1)
+2. **Score Transformation** → Credit score (300-900 range)
+3. **Rating Assignment** → Standard credit rating (AAA-D)
 
 ---
 
