@@ -221,7 +221,9 @@ class WOETransformer(BaseEstimator, TransformerMixin):
 
     def calc_woe_iv(self, df, feature_bin_col, target_col="target"):
         """Calculate WOE and IV for a feature"""
-        grouped = df.groupby(feature_bin_col)[target_col].agg(["count", "sum"])
+        grouped = df.groupby(feature_bin_col, observed=False)[target_col].agg(
+            ["count", "sum"]
+        )
         grouped.columns = ["total", "bad"]
         grouped["good"] = grouped["total"] - grouped["bad"]
 
