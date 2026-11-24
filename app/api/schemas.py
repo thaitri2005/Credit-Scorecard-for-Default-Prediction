@@ -37,35 +37,43 @@ class LoanApplicationRequest(BaseModel):
     """Request model for loan application"""
 
     # Reject unknown fields (catches typos such as "loan_amnt") and NaN/Infinity.
+    # Numeric fields are strict: booleans and numeric strings are not accepted.
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     annual_inc: float = Field(
-        ..., description="Annual income in USD", gt=0, le=10_000_000
+        ..., strict=True, description="Annual income in USD", gt=0, le=10_000_000
     )
     int_rate: float = Field(
-        ..., description="Loan interest rate in percent", ge=0, le=50
+        ..., strict=True, description="Loan interest rate in percent", ge=0, le=50
     )
     credit_history_length: float = Field(
-        ..., description="Credit history length in years", ge=0, le=100
+        ..., strict=True, description="Credit history length in years", ge=0, le=100
     )
     purpose: LoanPurpose = Field(..., description="Loan purpose")
     verification_status: VerificationStatus = Field(
         ..., description="Income verification status"
     )
     total_rev_hi_lim: Optional[float] = Field(
-        None, description="Total revolving credit limit in USD", ge=0
+        None, strict=True, description="Total revolving credit limit in USD", ge=0
     )
     tot_cur_bal: Optional[float] = Field(
-        None, description="Total current balance of all accounts in USD", ge=0
+        None,
+        strict=True,
+        description="Total current balance of all accounts in USD",
+        ge=0,
     )
     revol_util: Optional[float] = Field(
-        None, description="Revolving utilization in percent", ge=0, le=100
+        None, strict=True, description="Revolving utilization in percent", ge=0, le=100
     )
     loan_amount: Optional[float] = Field(
-        None, description="Loan amount in USD. Send this or loan_burden.", gt=0
+        None,
+        strict=True,
+        description="Loan amount in USD. Send this or loan_burden.",
+        gt=0,
     )
     loan_burden: Optional[float] = Field(
         None,
+        strict=True,
         description=(
             "Loan amount divided by annual income, for callers that already "
             "have the ratio. Send this or loan_amount, not both."
