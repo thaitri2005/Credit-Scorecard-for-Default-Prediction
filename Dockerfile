@@ -8,17 +8,20 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app
 
-# curl is needed by the HEALTHCHECK; every Python dependency ships a wheel,
-# so no compiler is required.
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# Apply pending security updates; curl is needed by the HEALTHCHECK. Every
+# Python dependency ships a wheel, so no compiler is required.
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
 COPY requirements.txt ./
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies, then remove the packaging tools: the running
+# service never installs anything, and they only add to the attack surface.
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip uninstall -y setuptools wheel pip \
+    && rm -rf /usr/local/lib/python3.10/ensurepip/_bundled
 
 # Copy application code
 COPY app/ ./app/
