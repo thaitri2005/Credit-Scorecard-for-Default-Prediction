@@ -2,7 +2,7 @@
 
 The service is a single container that serves a web UI and a REST API in front of one scoring service.
 
-<img src="diagrams/architecture.png" alt="System architecture" width="460">
+<img src="diagrams/architecture.png" alt="System architecture">
 
 ## Components
 
@@ -27,7 +27,7 @@ A few choices shape this path:
 
 ## Build and release
 
-<img src="diagrams/cicd.png" alt="Build and release pipeline" width="420">
+<img src="diagrams/cicd.png" alt="Build and release pipeline">
 
 Pushes and pull requests to `main` run the tests and an image scan in parallel. A push that passes both is built once, tagged with its commit SHA, published to Docker Hub and Azure Container Registry, and deployed to Azure App Service by that tag. Deploying an earlier tag rolls back.
 

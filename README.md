@@ -14,7 +14,7 @@ The model is a logistic regression on Weight of Evidence (WOE) bins, trained on 
 
 ## How it works
 
-<img src="docs/diagrams/architecture.png" alt="System architecture: a browser or API client calls the REST API, which passes validated applications to the scoring service" width="420">
+<img src="docs/diagrams/architecture.png" alt="System architecture: a browser or API client calls the REST API, which passes validated applications to the scoring service">
 
 One container serves both the web UI and the API. The scoring service loads the fitted pipeline and model once at startup, verifies them against recorded checksums, and scores each validated application.
 

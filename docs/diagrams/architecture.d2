@@ -1,4 +1,4 @@
-direction: down
+direction: right
 title: |md
   # System architecture
 | {near: top-center}
@@ -6,41 +6,49 @@ title: |md
 officer: |md
   **Credit officer**
 
-  enters applications in a browser
+  in a browser
 | {shape: rectangle; class: actor}
 client: |md
   **API client**
 
-  sends JSON over HTTPS
+  JSON over HTTPS
 | {shape: rectangle; class: actor}
 service: "Credit Risk Scorecard service, one container" {
   class: group
   ui: |md
     **Web UI**
 
-    static HTML, CSS and JavaScript
+    HTML, CSS,
+
+    JavaScript
   | {shape: rectangle; class: box}
   api: |md
     **REST API**
 
-    FastAPI routes and request validation
+    FastAPI routes,
+
+    request validation
   | {shape: rectangle; class: box}
   scoring: |md
     **Scoring service**
 
-    WOE pipeline, logistic regression,
+    WOE pipeline,
 
-    score scaling and risk grades
+    logistic regression,
+
+    score and grade
   | {shape: rectangle; class: key}
   artifacts: |md
     **Model artifacts**
 
-    pipeline, model and metadata
+    loaded at startup,
+
+    checksums verified
   | {shape: rectangle; class: box}
-  ui -> api: "POST /api/v1/predict" {style.stroke: "#556270"; style.font-color: "#556270"; style.font-size: 15}
-  api -> scoring: "validated application" {style.stroke: "#556270"; style.font-color: "#556270"; style.font-size: 15}
-  scoring -> artifacts: "loads once at startup,\nverifies checksums" {style.stroke: "#556270"; style.font-color: "#556270"; style.font-size: 15}
+  ui -> api
+  api -> scoring
+  scoring -> artifacts
 }
 
-officer -> service.ui {style.stroke: "#0b5aa8"; style.font-color: "#0b5aa8"; style.font-size: 15}
-client -> service.api {style.stroke: "#0b5aa8"; style.font-color: "#0b5aa8"; style.font-size: 15}
+officer -> service.ui {style.stroke: "#0b5aa8"}
+client -> service.api {style.stroke: "#0b5aa8"}

@@ -1,66 +1,56 @@
-direction: down
+direction: right
 title: |md
   # Build and release pipeline
 | {near: top-center}
 
 push: |md
-  **Push or pull request to main**
+  **Push or pull request**
 
-  starts both checks
+  to main
 | {shape: rectangle; class: actor}
-checks: "Checks, run in parallel" {
+checks: "Checks, in parallel" {
   class: group
   test: |md
     **Test**
 
-    black, flake8, mypy,
+    lint, types,
 
-    pytest with a coverage gate
+    tests, coverage
   | {shape: rectangle; class: box}
   scan: |md
     **Image scan**
 
-    builds the image; Trivy fails on
+    build the image,
 
-    fixable critical or high findings
+    Trivy scan
   | {shape: rectangle; class: box}
 }
 gate: |md
   **Release gate**
 
-  both checks pass and
+  both pass, and
 
-  the event is a push to main
+  a push to main
 | {shape: rectangle; class: key}
-release: "Release" {
-  class: group
-  build: |md
-    **Build image**
+publish: |md
+  **Build and publish**
 
-    tagged with the commit SHA
-  | {shape: rectangle; class: box}
-  hub: |md
-    **Docker Hub**
+  image tagged by commit,
 
-    public image
-  | {shape: rectangle; class: box}
-  acr: |md
-    **Azure Container Registry**
+  to Docker Hub and Azure
 
-    same image, retagged
-  | {shape: rectangle; class: box}
-  app: |md
-    **Azure App Service**
+  Container Registry
+| {shape: rectangle; class: box}
+app: |md
+  **Azure App Service**
 
-    runs the image for that commit
-  | {shape: rectangle; class: good}
-  build -> hub: "push" {style.stroke: "#556270"; style.font-color: "#556270"; style.font-size: 15}
-  hub -> acr: "copy" {style.stroke: "#556270"; style.font-color: "#556270"; style.font-size: 15}
-  acr -> app: "deploy by commit tag" {style.stroke: "#556270"; style.font-color: "#556270"; style.font-size: 15}
-}
+  runs that
 
+  commit's image
+| {shape: rectangle; class: good}
 push -> checks.test
 push -> checks.scan
 checks.test -> gate
 checks.scan -> gate
-gate -> release.build
+gate -> publish
+publish -> app

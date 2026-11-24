@@ -2,7 +2,7 @@
 
 How a loan application becomes a credit score, a risk grade and a points breakdown.
 
-<img src="diagrams/scoring-pipeline.png" alt="From application to credit score" width="620">
+<img src="diagrams/scoring-pipeline.png" alt="From application to credit score">
 
 ## The model
 

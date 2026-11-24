@@ -38,16 +38,7 @@ jobs:
         run: mypy . --ignore-missing-imports
 
       - name: Run tests with coverage
-        run: pytest -v --cov=app --cov-report=xml --cov-fail-under=90
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
-        with:
-          # Without this token Codecov rate-limits the upload (HTTP 429).
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
+        run: pytest -v --cov=app --cov-fail-under=90
 
   docker-security:
     runs-on: ubuntu-latest
