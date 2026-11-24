@@ -194,14 +194,17 @@ class CreditRiskUI {
         const band = this.bands[index];
         let range = '';
         if (band && index === 0) {
-            range = `, which covers scores below ${band.to}`;
+            range = `scores below ${band.to}`;
         } else if (band && index === this.bands.length - 1) {
-            range = `, which covers scores of ${band.from} and above`;
+            range = `scores of ${band.from} and above`;
         } else if (band) {
-            range = `, which covers scores from ${band.from} up to ${band.to}`;
+            range = `scores from ${band.from} to ${band.to - 1}`;
         }
+        document.getElementById('scaleCaption').textContent = range
+            ? `Grade ${rating} covers ${range}.`
+            : '';
         document.getElementById('scale').setAttribute(
-            'aria-label', `Score ${Math.floor(score)} falls in grade ${rating}${range}`
+            'aria-label', `Score ${Math.floor(score)} on a scale of grades from ${this.bands[0].rating} to ${this.bands[this.bands.length - 1].rating}`
         );
     }
 
@@ -403,30 +406,48 @@ class CreditRiskUI {
         document.getElementById('riskDescription').textContent = result.risk_description || '';
         this.renderScale(score, result.risk_level);
 
-        const rows = document.getElementById('breakdownRows');
-        rows.replaceChildren();
-        const addRow = (label, value, points, className = '') => {
-            const row = document.createElement('tr');
-            const name = document.createElement('th');
-            name.scope = 'row';
-            name.textContent = label;
-            const detail = document.createElement('td');
-            detail.className = 'value';
-            detail.textContent = value;
-            const number = document.createElement('td');
-            number.className = `num ${className}`;
-            number.textContent = points;
-            row.append(name, detail, number);
-            rows.appendChild(row);
-        };
-        addRow('Base score', 'Population average', Number(result.base_points).toFixed(1));
         const ordered = [...(result.points || [])].sort(
             (a, b) => FEATURE_ORDER.indexOf(a.feature) - FEATURE_ORDER.indexOf(b.feature)
         );
+        // Bars share one scale so their lengths compare across rows.
+        const largest = Math.max(10, ...ordered.map((item) => Math.abs(item.points)));
+
+        const rows = document.getElementById('breakdownRows');
+        rows.replaceChildren();
+        const addRow = (label, attribute, points, text) => {
+            const row = document.createElement('tr');
+            const name = document.createElement('th');
+            name.scope = 'row';
+            const title = document.createElement('span');
+            title.textContent = label;
+            const detail = document.createElement('span');
+            detail.className = 'attribute';
+            detail.textContent = attribute;
+            name.append(title, detail);
+
+            const barCell = document.createElement('td');
+            barCell.className = 'bar-cell';
+            barCell.setAttribute('aria-hidden', 'true');
+            if (points !== null) {
+                const bar = document.createElement('span');
+                bar.className = `bar ${points >= 0 ? 'pos' : 'neg'}`;
+                bar.style.width = `${(Math.abs(points) / largest) * 50}%`;
+                barCell.appendChild(bar);
+            }
+
+            const number = document.createElement('td');
+            number.className = 'num';
+            if (points !== null && Math.abs(points) > 0.05) {
+                number.classList.add(points > 0 ? 'pos' : 'neg');
+            }
+            number.textContent = text;
+            row.append(name, barCell, number);
+            rows.appendChild(row);
+        };
+        addRow('Base score', 'Population average', null, Number(result.base_points).toFixed(1));
         ordered.forEach((item) => {
             const label = item.feature === 'loan_burden' ? 'Loan amount' : this.labelFor(item.feature);
-            const tone = item.points > 0.05 ? 'pos' : item.points < -0.05 ? 'neg' : '';
-            addRow(label, this.describeInput(item.feature, payload), signed(item.points), tone);
+            addRow(label, this.describeInput(item.feature, payload), item.points, signed(item.points));
         });
         document.getElementById('breakdownTotal').textContent = (Math.floor(score * 10) / 10).toFixed(1);
 

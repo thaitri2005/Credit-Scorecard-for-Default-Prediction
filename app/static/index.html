@@ -6,7 +6,7 @@
     <title>Credit Risk Scorecard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
     <link rel="stylesheet" href="/static/css/style.css">
     <script>
         // Apply a saved theme before first paint.
@@ -49,7 +49,7 @@
                 <button type="button" class="chip" data-preset="stretched">Subprime</button>
             </div>
 
-            <form id="loanForm" novalidate>
+            <form id="loanForm" class="sheet" novalidate>
                 <fieldset>
                     <legend>Applicant</legend>
                     <div class="fields">
@@ -135,7 +135,7 @@
                             <div class="control"><span class="unit">$</span>
                                 <input type="number" id="total_rev_hi_lim" name="total_rev_hi_lim" inputmode="decimal" step="any" min="0" aria-describedby="total_rev_hi_lim_hint">
                             </div>
-                            <p class="hint" id="total_rev_hi_lim_hint" data-hint="Total across revolving accounts"></p>
+                            <p class="hint" id="total_rev_hi_lim_hint" data-hint="All revolving accounts"></p>
                         </div>
                         <div class="field">
                             <label for="tot_cur_bal">Total current balance</label>
@@ -192,13 +192,16 @@
                     </div>
                     <div class="scale-axis" id="scaleAxis"></div>
                 </div>
+                <p class="scale-caption" id="scaleCaption"></p>
 
                 <h3>Score attribution</h3>
                 <table class="breakdown">
                     <thead>
                         <tr>
                             <th scope="col">Characteristic</th>
-                            <th scope="col">Attribute</th>
+                            <th scope="col" class="bar-head" aria-hidden="true">
+                                <span>Lowers</span><span>Raises</span>
+                            </th>
                             <th scope="col" class="num">Points</th>
                         </tr>
                     </thead>
