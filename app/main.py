@@ -12,12 +12,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
-from app.utils.helpers import (
-    API_VERSION,
-    get_api_metadata,
-    get_model_instance,
-    setup_logging,
-)
+from app.config import API_VERSION, get_api_metadata, setup_logging
+from app.scoring import get_model_instance
 
 setup_logging()
 logger = logging.getLogger(__name__)

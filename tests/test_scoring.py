@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 
 from app.api.schemas import LoanPurpose, VerificationStatus
-from app.utils.helpers import (
+from app.scoring.service import (
     DEFAULT_MODEL_DIR,
     CreditRiskService,
 )
@@ -331,3 +331,22 @@ def test_startup_preloads_the_model(monkeypatch):
     monkeypatch.setattr(main_module, "get_model_instance", lambda: loaded.append(1))
     with TestClient(main_module.app):
         assert loaded == [1]
+
+
+def test_failed_model_load_is_remembered_not_retried(monkeypatch):
+    import app.scoring.service as service_module
+
+    calls = []
+
+    class Broken:
+        def __init__(self):
+            calls.append(1)
+            raise RuntimeError("artifact missing")
+
+    monkeypatch.setattr(service_module, "CreditRiskService", Broken)
+    monkeypatch.setattr(service_module, "_model_instance", None)
+    monkeypatch.setattr(service_module, "_model_error", None)
+    for _ in range(3):
+        with pytest.raises(RuntimeError, match="artifact missing"):
+            service_module.get_model_instance()
+    assert len(calls) == 1

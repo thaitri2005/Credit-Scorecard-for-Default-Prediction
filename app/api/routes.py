@@ -14,7 +14,7 @@ from app.api.schemas import (
     ModelInfoResponse,
     RatingBand,
 )
-from app.utils.helpers import CreditRiskService, get_model_instance
+from app.scoring import CreditRiskService, get_model_instance
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
