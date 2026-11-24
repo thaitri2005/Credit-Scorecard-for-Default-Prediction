@@ -1,16 +1,27 @@
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List, Dict
 from enum import Enum
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+MAX_BATCH_SIZE = 1000
 
 
 class LoanPurpose(str, Enum):
-    """Enum for loan purposes"""
+    """Loan purposes the model was trained on"""
 
     CREDIT_CARD = "credit_card"
     DEBT_CONSOLIDATION = "debt_consolidation"
     HOME_IMPROVEMENT = "home_improvement"
     CAR = "car"
     EDUCATIONAL = "educational"
+    HOUSE = "house"
+    MAJOR_PURCHASE = "major_purchase"
+    MEDICAL = "medical"
+    MOVING = "moving"
+    RENEWABLE_ENERGY = "renewable_energy"
+    SMALL_BUSINESS = "small_business"
+    VACATION = "vacation"
+    WEDDING = "wedding"
     OTHER = "other"
 
 
@@ -25,48 +36,55 @@ class VerificationStatus(str, Enum):
 class LoanApplicationRequest(BaseModel):
     """Request model for loan application"""
 
-    annual_inc: float = Field(..., description="Annual income in USD", gt=0)
-    int_rate: float = Field(..., description="Interest rate percentage", ge=0, le=50)
+    # Reject unknown fields (catches typos such as "loan_amnt") and NaN/Infinity.
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+
+    annual_inc: float = Field(
+        ..., description="Annual income in USD", gt=0, le=10_000_000
+    )
+    int_rate: float = Field(
+        ..., description="Loan interest rate in percent", ge=0, le=50
+    )
     credit_history_length: float = Field(
-        ..., description="Credit history length in years", ge=0
-    )
-    total_rev_hi_lim: Optional[float] = Field(
-        None, description="Total revolving high limit", ge=0
-    )
-    tot_cur_bal: Optional[float] = Field(
-        None, description="Total current balance", ge=0
+        ..., description="Credit history length in years", ge=0, le=100
     )
     purpose: LoanPurpose = Field(..., description="Loan purpose")
-    loan_burden: Optional[float] = Field(None, description="Loan burden ratio", ge=0)
-    revol_util: Optional[float] = Field(
-        None, description="Revolving utilization percentage", ge=0, le=100
-    )
     verification_status: VerificationStatus = Field(
-        ..., description="Verification status"
+        ..., description="Income verification status"
     )
-    loan_amount: Optional[float] = Field(None, description="Loan amount in USD", gt=0)
+    total_rev_hi_lim: Optional[float] = Field(
+        None, description="Total revolving credit limit in USD", ge=0
+    )
+    tot_cur_bal: Optional[float] = Field(
+        None, description="Total current balance of all accounts in USD", ge=0
+    )
+    revol_util: Optional[float] = Field(
+        None, description="Revolving utilization in percent", ge=0, le=100
+    )
+    loan_amount: Optional[float] = Field(
+        None, description="Loan amount in USD. Send this or loan_burden.", gt=0
+    )
+    loan_burden: Optional[float] = Field(
+        None,
+        description=(
+            "Loan amount divided by annual income, for callers that already "
+            "have the ratio. Send this or loan_amount, not both."
+        ),
+        ge=0,
+    )
 
-    @field_validator("annual_inc")
-    def validate_annual_income(cls, v):
-        if v <= 0:
-            raise ValueError("Annual income must be positive")
-        if v > 10000000:  # 10 million
-            raise ValueError("Annual income seems unreasonably high")
-        return v
+    @model_validator(mode="after")
+    def require_exactly_one_loan_size(self):
+        if (self.loan_amount is None) == (self.loan_burden is None):
+            raise ValueError("Provide exactly one of loan_amount or loan_burden")
+        return self
 
-    @field_validator("int_rate")
-    def validate_interest_rate(cls, v):
-        if v < 0 or v > 50:
-            raise ValueError("Interest rate must be between 0 and 50 percent")
-        return v
 
-    @field_validator("credit_history_length")
-    def validate_credit_history(cls, v):
-        if v < 0:
-            raise ValueError("Credit history length cannot be negative")
-        if v > 100:  # 100 years seems unreasonable
-            raise ValueError("Credit history length seems unreasonably high")
-        return v
+class FeaturePoints(BaseModel):
+    """Points one input contributed to the credit score"""
+
+    feature: str
+    points: float
 
 
 class CreditScoreResponse(BaseModel):
@@ -74,54 +92,77 @@ class CreditScoreResponse(BaseModel):
 
     credit_score: float = Field(..., description="Calculated credit score")
     default_probability: float = Field(..., description="Probability of default (0-1)")
-    risk_level: str = Field(..., description="Risk level assessment")
-    log_odds: Optional[float] = Field(None, description="Log odds value")
+    risk_level: str = Field(..., description="Internal risk grade (AAA to C)")
+    risk_description: Optional[str] = Field(
+        None, description="Plain-language meaning of the risk grade"
+    )
+    log_odds: Optional[float] = Field(None, description="Log odds of default")
+    base_points: Optional[float] = Field(
+        None, description="Score of an applicant with average evidence on every input"
+    )
+    points: List[FeaturePoints] = Field(
+        default_factory=list,
+        description="Points each input adds to base_points; together they give the score",
+    )
+    missing_fields: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Optional inputs that were not supplied. Each is scored like the "
+            "least favourable value of that input."
+        ),
+    )
     message: Optional[str] = Field(None, description="Additional information")
 
 
 class HealthResponse(BaseModel):
     """Health check response model"""
 
+    model_config = ConfigDict(protected_namespaces=())
+
     status: str = Field(..., description="Service status")
     model_loaded: bool = Field(..., description="Whether model is loaded")
-    version: str = Field(..., description="API version")
+    version: str = Field(..., description="Model version")
     timestamp: Optional[str] = Field(None, description="Response timestamp")
 
 
-class FeatureImportanceResponse(BaseModel):
-    """Feature importance response model"""
+class RatingBand(BaseModel):
+    """One risk grade and the minimum score that earns it"""
 
-    feature_importance: Dict[str, float] = Field(
-        ..., description="Feature importance scores"
-    )
-    total_features: int = Field(..., description="Total number of features")
+    min_score: float
+    rating: str
+    description: str
 
 
 class ModelInfoResponse(BaseModel):
     """Model information response model"""
 
+    model_config = ConfigDict(protected_namespaces=())
+
     model_type: str = Field(..., description="Type of model")
     features_used: List[str] = Field(..., description="List of features used")
     scoring_params: Dict[str, float] = Field(..., description="Scoring parameters")
+    rating_bands: List[RatingBand] = Field(
+        default_factory=list, description="Score thresholds for each risk grade"
+    )
+    lowest_rating: Optional[str] = Field(
+        None, description="Grade given to scores below every threshold"
+    )
+    score_range: Dict[str, float] = Field(
+        default_factory=dict, description="Lowest and highest score the model can give"
+    )
     training_date: Optional[str] = Field(None, description="Model training date")
-
-
-class ErrorResponse(BaseModel):
-    """Error response model"""
-
-    error: str = Field(..., description="Error message")
-    detail: Optional[str] = Field(None, description="Detailed error information")
-    status_code: int = Field(..., description="HTTP status code")
 
 
 class BatchPredictionRequest(BaseModel):
     """Request model for batch predictions"""
 
+    model_config = ConfigDict(extra="forbid")
+
     applications: List[LoanApplicationRequest] = Field(
-        ..., description="List of loan applications"
-    )
-    include_details: bool = Field(
-        False, description="Whether to include detailed results"
+        ...,
+        description="List of loan applications",
+        min_length=1,
+        max_length=MAX_BATCH_SIZE,
     )
 
 
@@ -129,7 +170,7 @@ class BatchPredictionResponse(BaseModel):
     """Response model for batch predictions"""
 
     predictions: List[CreditScoreResponse] = Field(
-        ..., description="List of predictions"
+        ..., description="Predictions, in the same order as the applications"
     )
     total_applications: int = Field(
         ..., description="Total number of applications processed"

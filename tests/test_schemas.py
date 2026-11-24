@@ -11,6 +11,7 @@ def make_valid_request(**overrides):
         "credit_history_length": 5.5,
         "purpose": LoanPurpose.DEBT_CONSOLIDATION.value,
         "verification_status": VerificationStatus.VERIFIED.value,
+        "loan_amount": 15000,
     }
     base.update(overrides)
     return base
@@ -32,6 +33,12 @@ def test_schema_valid_minimal():
         ("int_rate", 55.0),
         ("credit_history_length", -0.5),
         ("credit_history_length", 150.0),
+        ("revol_util", 101),
+        ("loan_amount", 0),
+        ("tot_cur_bal", float("inf")),
+        ("tot_cur_bal", float("nan")),
+        ("purpose", "yacht"),
+        ("verification_status", "verified"),
     ],
 )
 def test_schema_invalid_values(field, value):
@@ -41,13 +48,28 @@ def test_schema_invalid_values(field, value):
 
 
 def test_schema_optional_fields():
-    data = make_valid_request(
-        total_rev_hi_lim=10000,
-        tot_cur_bal=5000,
-        loan_burden=0.2,
-        revol_util=30.0,
-        loan_amount=10000,
-    )
+    data = make_valid_request(total_rev_hi_lim=10000, tot_cur_bal=5000, revol_util=30.0)
     obj = LoanApplicationRequest(**data)
     assert obj.total_rev_hi_lim == 10000
     assert obj.revol_util == 30.0
+
+
+def test_schema_needs_exactly_one_of_loan_amount_and_loan_burden():
+    data = make_valid_request()
+    del data["loan_amount"]
+    with pytest.raises(ValidationError):
+        LoanApplicationRequest(**data)
+    assert LoanApplicationRequest(**data, loan_burden=0.2).loan_burden == 0.2
+    with pytest.raises(ValidationError):
+        LoanApplicationRequest(**data, loan_burden=0.2, loan_amount=15000)
+
+
+def test_schema_rejects_unknown_fields():
+    with pytest.raises(ValidationError):
+        LoanApplicationRequest(**make_valid_request(loan_amnt=5000))
+
+
+def test_schema_accepts_every_trained_purpose():
+    assert len(LoanPurpose) == 14
+    for purpose in LoanPurpose:
+        LoanApplicationRequest(**make_valid_request(purpose=purpose.value))

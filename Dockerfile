@@ -8,10 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    curl \
+# curl is needed by the HEALTHCHECK; every Python dependency ships a wheel,
+# so no compiler is required.
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -23,11 +22,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy application code
 COPY app/ ./app/
-COPY data/ ./data/
 COPY models/ ./models/
-
-# Create logs directory
-RUN mkdir -p logs
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
@@ -39,8 +34,8 @@ USER appuser
 # Expose port 80 (Azure requires it)
 EXPOSE 80
 
-# Health check (optional but recommended)
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+# Health check: /api/v1/health returns 503 when the model is not loaded
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
     CMD curl -f http://localhost:80/api/v1/health || exit 1
 
 # Start the FastAPI app

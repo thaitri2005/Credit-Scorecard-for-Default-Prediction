@@ -1,4 +1,5 @@
 {
+  "version": "1.1.0",
   "model_type": "LogisticRegression",
   "features": [
     "int_rate_woe",
@@ -24,5 +25,63 @@
     "bad_borrowers": 61176,
     "good_percentage": 92.98975782258047,
     "bad_percentage": 7.01024217741954
+  },
+  "PDO": 20,
+  "BaseScore": 600,
+  "BaseOdds": 50,
+  "base_points": 562.01,
+  "score_range": {
+    "min": 511.08,
+    "max": 645.76
+  },
+  "rating_bands": [
+    {
+      "min_score": 620,
+      "rating": "AAA",
+      "description": "Minimal default risk"
+    },
+    {
+      "min_score": 605,
+      "rating": "AA",
+      "description": "Very low default risk"
+    },
+    {
+      "min_score": 590,
+      "rating": "A",
+      "description": "Low default risk"
+    },
+    {
+      "min_score": 575,
+      "rating": "BBB",
+      "description": "Below-average default risk"
+    },
+    {
+      "min_score": 560,
+      "rating": "BB",
+      "description": "Average default risk"
+    },
+    {
+      "min_score": 545,
+      "rating": "B",
+      "description": "Above-average default risk"
+    },
+    {
+      "min_score": 530,
+      "rating": "CCC",
+      "description": "High default risk"
+    },
+    {
+      "min_score": 515,
+      "rating": "CC",
+      "description": "Very high default risk"
+    }
+  ],
+  "lowest_rating": {
+    "rating": "C",
+    "description": "Highest default risk this model assigns"
+  },
+  "artifact_sha256": {
+    "credit_risk_model.joblib": "875771997d0348c24485af99528c8a515c9ea8b64b60e255d2c563efbe3fb2b6",
+    "preprocessing_pipeline.joblib": "f29cccc728be966a35ddd2b735c4caadb328c307ca0a9f25e9111cd83613754a"
   }
 }

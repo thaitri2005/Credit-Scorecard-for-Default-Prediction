@@ -1,1 +1,5 @@
+# CVE-2024-5206 (scikit-learn < 1.5.0): data leak via TfidfVectorizer.stop_words_.
+# Not applicable: this service never uses TfidfVectorizer, and scikit-learn must
+# stay at 1.2.2 because the pickled model artifacts were created with it.
+# Remove once the model is retrained on scikit-learn >= 1.5.0.
 CVE-2024-5206

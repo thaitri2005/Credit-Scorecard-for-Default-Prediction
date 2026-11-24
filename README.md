@@ -1,254 +1,165 @@
-# 💳 Credit Risk Scorecard for Default Prediction
+# Credit Risk Scorecard for Default Prediction
 
-A **FastAPI-based web application** for **credit default risk prediction**, adapted from my Kaggle notebook  
-👉 [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction).
+A FastAPI service and web UI that scores a loan application: it returns a credit score, a default probability, a risk grade, and the points each input contributed.
 
-The notebook covers the **entire modeling pipeline**, while this repository turns that work into a **production-ready, Dockerized API + Web UI** with **CI/CD automation** and **Azure Cloud deployment**.
+The model is a logistic regression on Weight of Evidence (WOE) bins, trained on LendingClub loans in my Kaggle notebook, [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction). This repository wraps that model in an API with a Docker image, CI/CD and an Azure deployment.
 
----
+**Live app:** <https://creditscorecardwoeiv-bgc3edb0fzgzdzfg.eastasia-01.azurewebsites.net/> (the first request can take up to a minute while the free tier wakes up)
 
-## 🚀 Live Deployment
+## Run it
 
-**🌐 Production App (Azure):**  
-🔗 [https://creditscorecardwoeiv-bgc3edb0fzgzdzfg.eastasia-01.azurewebsites.net/](https://creditscorecardwoeiv-bgc3edb0fzgzdzfg.eastasia-01.azurewebsites.net/)
-
-> ⚙️ *Startup may take 30–60 seconds on first access (free tier cold start).*
-
----
-
-## 🚀 Features
-
-- **Credit Score Prediction** using a Logistic Regression model with **Weight of Evidence (WOE)** transformation  
-- **Industry-Standard Credit Ratings**: Assigns **S&P/Moody's/Fitch-style ratings** (AAA, AA, A, BBB, BB, B, CCC, CC, C, D) based on credit score  
-- **Default Risk Assessment**: Predicts default probability + standardized credit rating  
-- **Preprocessing Pipeline** (feature binning, scaling, encoding)  
-- **RESTful API** built with FastAPI  
-- **Interactive Swagger Docs** at `/docs`  
-- **Responsive Web UI** for non-technical users  
-- **Dockerized Deployment** via Azure App Service or Docker Compose  
-- **Full CI/CD Workflow** using GitHub Actions (lint → test → build → push → deploy)
-
----
-
-## 📁 Project Structure
-
-```bash
-Credit Scorecard - Default Prediction/
-├── app/                      # FastAPI application
-│   ├── main.py               # App entrypoint
-│   ├── api/                  # API layer: routes & schemas
-│   │   ├── routes.py
-│   │   └── schemas.py
-│   ├── utils/                # Helper utilities
-│   │   └── helpers.py
-│   └── static/               # Web UI (HTML, CSS, JS, assets)
-├── tests/                    # Unit & integration tests
-├── models/                   # Exported pipeline, model, scorecard, metadata
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── requirements-dev.txt
-└── .github/
-    └── workflows/
-        └── deploy.yml            # CI/CD pipeline
-```
-
----
-
-📚 Background
-
-This project is based on the Kaggle notebook:
-👉 [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction)
-
-The data preparation, WOE binning, and logistic regression model training are all explained in the notebook.
-
-The exported preprocessing pipeline, trained model, and scorecard are taken from that notebook.
-
-This repository focuses on wrapping the trained pipeline + model into a FastAPI application, with a frontend and Dockerized CI/CD pipeline for real-world usage.
-
----
-
-## 🛠️ Installation
-
-### Local Development
+Locally, with Python 3.10:
 
 ```bash
 git clone https://github.com/thaitri2005/Credit-Scorecard-for-Default-Prediction.git
-cd credit-risk-scorecard
+cd Credit-Scorecard-for-Default-Prediction
 python -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
+source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements-dev.txt
 uvicorn app.main:app --reload
-
 ```
 
-### Docker Deployment
+With Docker:
 
-   ```bash
-   docker build -t credit-risk-api .
-   docker run -p 8000:80 credit-risk-api
-   ```
+```bash
+docker compose up --build
+```
 
-   or with Compose:
+Or pull the published image:
 
-   ```bash
-   docker-compose up --build
-   ```
+```bash
+docker run -p 8000:80 thaitri2005/credit_scorecard_for_default_prediction:latest
+```
 
-   or pull prebuilt image (from Docker Hub CI/CD)
+Each option serves the UI at <http://localhost:8000> and the interactive API docs at <http://localhost:8000/docs>.
 
-   ```bash
-   docker pull thaitri2005/credit_scorecard_for_default_prediction:latest
-   docker run -p 8000:80 thaitri2005/credit_scorecard_for_default_prediction:latest
-   ```
+## API
 
----
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/v1/predict` | Score one application |
+| `POST /api/v1/predict/batch` | Score up to 1000 applications |
+| `GET /api/v1/model/info` | Features, scoring parameters and grade bands |
+| `GET /api/v1/health` | Health check; `503` if the model is not loaded |
 
-## 📚 API Documentation
+### Request fields
 
-### Endpoints
+| Field | Required | Description |
+|-------|----------|-------------|
+| `annual_inc` | yes | Annual income in USD |
+| `credit_history_length` | yes | Years since the first credit account |
+| `verification_status` | yes | `Verified`, `Source Verified` or `Not Verified` |
+| `loan_amount` | yes | Loan amount in USD |
+| `int_rate` | yes | Interest rate in percent |
+| `purpose` | yes | `debt_consolidation`, `credit_card`, `home_improvement`, `major_purchase`, `car`, `house`, `small_business`, `medical`, `moving`, `vacation`, `wedding`, `educational`, `renewable_energy` or `other` |
+| `total_rev_hi_lim` | no | Total revolving credit limit in USD |
+| `tot_cur_bal` | no | Total current balance in USD |
+| `revol_util` | no | Revolving utilization in percent |
 
-- `GET /` - Web UI
-- `GET /api/v1/health` - Health check
-- `POST /api/v1/predict` - Single prediction
-- `POST /api/v1/predict/batch` - Batch predictions
-- `GET /api/v1/model/info` - Model information
-- `GET /api/v1/model/features/importance` - Feature importance
-- `GET /docs` - Interactive API documentation
+The model uses the ratio of loan amount to income. Callers that already have it can send `loan_burden` instead of `loan_amount`.
 
-### Example Request
+An optional field left out is scored as its least favourable value and listed in `missing_fields`.
+
+### Example
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/predict" \
      -H "Content-Type: application/json" \
      -d '{
        "annual_inc": 75000,
-       "int_rate": 12.5,
        "credit_history_length": 5.5,
+       "verification_status": "Verified",
+       "loan_amount": 15000,
+       "int_rate": 12.5,
        "purpose": "debt_consolidation",
-       "verification_status": "verified"
+       "total_rev_hi_lim": 30000,
+       "tot_cur_bal": 120000,
+       "revol_util": 40
      }'
 ```
 
-### Example Response
-
 ```json
 {
-  "credit_score": 650.25,
-  "default_probability": 0.1234,
-  "risk_level": "A",
-  "log_odds": -1.9876,
-  "message": "Prediction completed successfully"
+  "credit_score": 569.55,
+  "default_probability": 0.0543,
+  "risk_level": "BB",
+  "risk_description": "Average default risk",
+  "log_odds": -2.8568,
+  "base_points": 562.01,
+  "points": [
+    {"feature": "int_rate", "points": 7.89},
+    {"feature": "total_rev_hi_lim", "points": 1.15},
+    {"feature": "tot_cur_bal", "points": 3.03},
+    {"feature": "annual_inc", "points": 0.96},
+    {"feature": "purpose", "points": -0.37},
+    {"feature": "loan_burden", "points": 0.64},
+    {"feature": "credit_history_length", "points": -3.77},
+    {"feature": "revol_util", "points": 0.56},
+    {"feature": "verification_status", "points": -2.54}
+  ],
+  "missing_fields": [],
+  "message": "Average default risk"
 }
 ```
 
-> **Note**: The `risk_level` field uses industry-standard credit ratings (AAA, AA, A, BBB, BB, B, CCC, CC, C, D) based on the calculated credit score, following S&P/Moody's/Fitch rating conventions.
+## Scoring
 
----
-
-## 📈 Scoring Methodology
-
-This application follows **industry-standard credit scoring practices**:
-
-### Credit Score Calculation
-
-The credit score is calculated using the standard **scorecard transformation formula**:
+The score follows the standard scorecard scaling:
 
 ```text
-Score = Offset - Factor × log(odds)
+Score = Offset - Factor × ln(odds of default)
+Factor = PDO / ln(2)
+Offset = BaseScore - Factor × ln(BaseOdds)
 ```
 
-Where:
+with PDO = 20, BaseScore = 600 and BaseOdds = 50:1, so 600 points means 50:1 odds of repaying and every 20 points doubles those odds.
 
-- **Factor** = PDO / ln(2) (Points to Double Odds, typically 20)
-- **Offset** = BaseScore - Factor × ln(BaseOdds)
-- **log(odds)** = ln(probability / (1 - probability))
+The same number can be read as a scorecard: 562 base points plus the points of the bin each input falls into. `models/scorecard.csv` lists every bin and its points, and the API returns the per-input points with each prediction.
 
-**Default Parameters:**
+Scores from this model range from 511 to 646 and map to nine risk grades:
 
-- PDO (Points to Double Odds): 20
-- Base Score: 600
-- Base Odds: 50:1 (Good:Bad ratio)
+| Score | Grade | Meaning | Default probability |
+|-------|-------|---------|---------------------|
+| 620 and above | AAA | Minimal default risk | under 1% |
+| 605-619 | AA | Very low default risk | 1% - 1.7% |
+| 590-604 | A | Low default risk | 1.7% - 2.8% |
+| 575-589 | BBB | Below-average default risk | 2.8% - 4.5% |
+| 560-574 | BB | Average default risk | 4.5% - 7.4% |
+| 545-559 | B | Above-average default risk | 7.4% - 12% |
+| 530-544 | CCC | High default risk | 12% - 18% |
+| 515-529 | CC | Very high default risk | 18% - 28% |
+| below 515 | C | Highest default risk | above 28% |
 
-### Risk Level Assignment
+The grades use a familiar letter scale but are internal to this model, not agency credit ratings. The scaling parameters and grade bands are set in `models/model_metadata.json`.
 
-Risk levels are assigned using **industry-standard credit ratings** based on the calculated credit score:
+## Project structure
 
-| Credit Score | Rating | Risk Level |
-|-------------|--------|------------|
-| ≥ 750 | AAA | Highest quality, minimal default risk |
-| 700-749 | AA | Very high quality, very low default risk |
-| 650-699 | A | High quality, low default risk |
-| 600-649 | BBB | Good quality, moderate default risk |
-| 550-599 | BB | Speculative, elevated default risk |
-| 500-549 | B | Highly speculative, material default risk |
-| 450-499 | CCC | Substantial credit risk |
-| 400-449 | CC | Very high credit risk |
-| 350-399 | C | Near default |
-| < 350 | D | Default |
+```text
+app/
+  main.py            App entrypoint, middleware, error handlers
+  api/routes.py      Endpoints
+  api/schemas.py     Request and response models
+  utils/helpers.py   Preprocessing transformers and the scoring service
+  static/            Web UI
+models/              Trained model, preprocessing pipeline, scorecard, metadata
+notebooks/           Training notebooks
+tests/               API and model tests
+.github/workflows/   CI/CD pipeline
+```
 
-This rating system aligns with **S&P, Moody's, and Fitch** credit rating scales, providing familiar and interpretable risk assessments for financial professionals.
+## Development
 
-### Calculation Flow
+```bash
+pytest --cov=app
+black --check .
+flake8 . --max-line-length=100 --ignore=E203,W503
+mypy . --ignore-missing-imports
+```
 
-The prediction pipeline follows this sequence:
+scikit-learn, numpy and pandas are pinned to the versions the model was saved with; keep them in step with the files in `models/`.
 
-1. **Model Prediction** → Default probability (0-1)
-2. **Score Transformation** → Credit score (300-900 range)
-3. **Rating Assignment** → Standard credit rating (AAA-D)
+Every push and pull request runs these checks and a Trivy scan of the Docker image. On `main`, once both pass, the image is pushed to Docker Hub and Azure Container Registry and deployed to Azure App Service.
 
----
+## License
 
-## 🔄 CI/CD Workflow
-
-The CI/CD pipeline performs the following steps:
-
-1. Lint & Type Check
-2. Run Unit Tests
-3. Security Scan (Trivy)
-4. Build Docker Image
-5. Push to Azure Container Registry
-6. Deploy to Azure Web App (App Service)
-
-For more details, see the [GitHub Actions workflow](.github/workflows/deploy.yml).
-
----
-
-## 📊 Model Features
-
-- `annual_inc`: Annual income
-- `int_rate`: Interest rate
-- `purpose`: Loan purpose
-- `verification_status`: Income verification status
-- `total_rev_hi_lim`: Total revolving high limit
-- `tot_cur_bal`: Total current balance
-- `loan_burden`: Loan burden ratio
-- `revol_util`: Revolving utilization
-- `credit_history_length`: Credit history length
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Run the test suite
-6. Submit a pull request
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 🆘 Support
-
-For support and questions:
-
-- Create an issue on GitHub
-- Check the API documentation at `/docs`
-- Review the test cases for usage examples
+MIT. See [LICENSE](LICENSE).

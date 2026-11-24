@@ -1,391 +1,431 @@
-// Credit Risk Scorecard UI JavaScript
+// Credit Risk Scorecard UI
+
+const NUMERIC_FIELDS = [
+    'annual_inc', 'credit_history_length', 'loan_amount', 'int_rate',
+    'total_rev_hi_lim', 'tot_cur_bal', 'revol_util',
+];
+const REQUIRED_FIELDS = [
+    'annual_inc', 'credit_history_length', 'verification_status',
+    'loan_amount', 'int_rate', 'purpose',
+];
+// Fields the API requires to be strictly greater than zero.
+const STRICTLY_POSITIVE = ['annual_inc', 'loan_amount'];
+
+const PRESETS = {
+    strong: {
+        annual_inc: 140000, credit_history_length: 22, verification_status: 'Not Verified',
+        loan_amount: 12000, int_rate: 6.9, purpose: 'credit_card',
+        total_rev_hi_lim: 60000, tot_cur_bal: 310000, revol_util: 18,
+    },
+    typical: {
+        annual_inc: 75000, credit_history_length: 5.5, verification_status: 'Verified',
+        loan_amount: 15000, int_rate: 12.5, purpose: 'debt_consolidation',
+        total_rev_hi_lim: 30000, tot_cur_bal: 120000, revol_util: 40,
+    },
+    stretched: {
+        annual_inc: 38000, credit_history_length: 4, verification_status: 'Verified',
+        loan_amount: 18000, int_rate: 21.5, purpose: 'small_business',
+        total_rev_hi_lim: 9000, tot_cur_bal: 21000, revol_util: 92,
+    },
+};
+
+// Breakdown rows follow the order of the form.
+const FEATURE_ORDER = [
+    'annual_inc', 'credit_history_length', 'verification_status',
+    'loan_burden', 'int_rate', 'purpose',
+    'total_rev_hi_lim', 'tot_cur_bal', 'revol_util',
+];
+
+// Scale shown when the model info endpoint cannot be reached.
+const FALLBACK_BANDS = [
+    { min_score: 620, rating: 'AAA' }, { min_score: 605, rating: 'AA' },
+    { min_score: 590, rating: 'A' }, { min_score: 575, rating: 'BBB' },
+    { min_score: 560, rating: 'BB' }, { min_score: 545, rating: 'B' },
+    { min_score: 530, rating: 'CCC' }, { min_score: 515, rating: 'CC' },
+];
+
+const money = new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD', maximumFractionDigits: 0,
+});
+const percent = (value, digits = 1) => `${Number(value).toFixed(digits)}%`;
+const signed = (value) => `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(value).toFixed(1)}`;
 
 class CreditRiskUI {
     constructor() {
         this.form = document.getElementById('loanForm');
         this.results = document.getElementById('results');
-        this.loading = document.getElementById('loading');
-        this.submitBtn = document.getElementById('submitBtn');
-        this.clearBtn = document.getElementById('clearBtn');
-        this.closeResultsBtn = document.getElementById('closeResults');
-        
-        this.init();
-    }
-    
-    init() {
-        // Event listeners
-        this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-        this.clearBtn.addEventListener('click', () => this.clearForm());
-        this.closeResultsBtn.addEventListener('click', () => this.hideResults());
-        
-        // Add input validation
-        this.addInputValidation();
-        
-        // Auto-calculate loan burden if loan amount is provided
-        this.addLoanAmountField();
-    }
-    
-    addInputValidation() {
-        const inputs = this.form.querySelectorAll('input[type="number"]');
-        inputs.forEach(input => {
-            input.addEventListener('blur', () => this.validateInput(input));
-            input.addEventListener('input', () => this.clearInputError(input));
+        this.resultBody = document.getElementById('resultBody');
+        this.resultEmpty = document.getElementById('resultEmpty');
+        this.resultError = document.getElementById('resultError');
+        this.mobileBar = document.getElementById('mobileBar');
+        this.chips = Array.from(document.querySelectorAll('.chip'));
+        this.bands = [];
+        this.pending = null;
+        this.timer = null;
+
+        this.form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.score({ showErrors: true, focusResult: true });
         });
-    }
-    
-    addLoanAmountField() {
-        // Add loan amount field dynamically
-        const purposeGroup = document.querySelector('#purpose').closest('.form-group');
-        const loanAmountGroup = document.createElement('div');
-        loanAmountGroup.className = 'form-group';
-        loanAmountGroup.innerHTML = `
-            <label for="loan_amount">
-                <i class="fas fa-dollar-sign"></i> Loan Amount ($)
-            </label>
-            <input type="number" id="loan_amount" name="loan_amount" 
-                   placeholder="e.g., 15000" min="0" step="1000">
-            <small>Amount you want to borrow</small>
-        `;
-        
-        purposeGroup.parentNode.insertBefore(loanAmountGroup, purposeGroup.nextSibling);
-        
-        // Auto-calculate loan burden
-        const loanAmountInput = document.getElementById('loan_amount');
-        const annualIncInput = document.getElementById('annual_inc');
-        
-        const calculateLoanBurden = () => {
-            const loanAmount = parseFloat(loanAmountInput.value) || 0;
-            const annualInc = parseFloat(annualIncInput.value) || 0;
-            
-            if (loanAmount > 0 && annualInc > 0) {
-                const burden = loanAmount / (annualInc + 1);
-                const burdenInput = document.getElementById('loan_burden');
-                if (burdenInput) {
-                    burdenInput.value = burden.toFixed(4);
-                }
-            }
-        };
-        
-        loanAmountInput.addEventListener('input', calculateLoanBurden);
-        annualIncInput.addEventListener('input', calculateLoanBurden);
-    }
-    
-    validateInput(input) {
-        const value = parseFloat(input.value);
-        const min = parseFloat(input.min) || 0;
-        const max = parseFloat(input.max) || Infinity;
-        
-        if (input.value && (value < min || value > max)) {
-            this.showInputError(input, `Value must be between ${min} and ${max}`);
-            return false;
-        }
-        
-        this.clearInputError(input);
-        return true;
-    }
-    
-    showInputError(input, message) {
-        this.clearInputError(input);
-        
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'input-error';
-        errorDiv.style.color = '#e74c3c';
-        errorDiv.style.fontSize = '0.8rem';
-        errorDiv.style.marginTop = '0.3rem';
-        errorDiv.textContent = message;
-        
-        input.style.borderColor = '#e74c3c';
-        input.parentNode.appendChild(errorDiv);
-    }
-    
-    clearInputError(input) {
-        input.style.borderColor = '#e1e8ed';
-        const errorDiv = input.parentNode.querySelector('.input-error');
-        if (errorDiv) {
-            errorDiv.remove();
-        }
-    }
-    
-    async handleSubmit(e) {
-        e.preventDefault();
-        
-        // Validate all inputs
-        const isValid = this.validateForm();
-        if (!isValid) {
-            this.showNotification('Please fix the errors in the form', 'error');
-            return;
-        }
-        
-        // Show loading
-        this.showLoading();
-        
-        try {
-            // Collect form data
-            const formData = this.collectFormData();
-            
-            // Make API request
-            const response = await fetch('/api/v1/predict', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
+        document.getElementById('clearBtn').addEventListener('click', () => this.clear());
+        this.chips.forEach((chip) => {
+            chip.addEventListener('click', () => this.applyPreset(chip.dataset.preset));
+        });
+        this.fields().forEach((field) => {
+            field.addEventListener('input', () => {
+                this.selectChip(null);
+                this.setFieldError(field, '');
+                clearTimeout(this.timer);
+                this.timer = setTimeout(() => this.score({ showErrors: false }), 300);
             });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || 'Request failed');
-            }
-            
-            const result = await response.json();
-            
-            // Display results
-            this.displayResults(result);
-            
-        } catch (error) {
-            console.error('Error:', error);
-            this.showNotification(`Error: ${error.message}`, 'error');
-        } finally {
-            this.hideLoading();
+            field.addEventListener('blur', () => {
+                if (field.value.trim()) {
+                    this.setFieldError(field, this.fieldError(field));
+                }
+            });
+        });
+
+        // The bottom summary bar is only useful while the assessment is off screen.
+        if ('IntersectionObserver' in window) {
+            new IntersectionObserver(([entry]) => {
+                this.mobileBar.classList.toggle('offscreen', entry.isIntersecting);
+            }, { threshold: 0.2 }).observe(this.results);
         }
+
+        this.loadScale().then(() => this.applyPreset('typical'));
     }
-    
-    validateForm() {
-        const requiredFields = ['annual_inc', 'int_rate', 'credit_history_length', 'purpose', 'verification_status'];
-        let isValid = true;
-        
-        requiredFields.forEach(fieldName => {
-            const field = document.getElementById(fieldName);
-            if (!field.value.trim()) {
-                this.showInputError(field, 'This field is required');
-                isValid = false;
-            }
-        });
-        
-        // Validate number inputs
-        const numberInputs = this.form.querySelectorAll('input[type="number"]');
-        numberInputs.forEach(input => {
-            if (input.value && !this.validateInput(input)) {
-                isValid = false;
-            }
-        });
-        
-        return isValid;
+
+    fields() {
+        return Array.from(this.form.querySelectorAll('input, select'));
     }
-    
-    collectFormData() {
-        const formData = new FormData(this.form);
-        const data = {};
-        
-        for (let [key, value] of formData.entries()) {
-            if (value.trim()) {
-                // Convert numbers
-                if (['annual_inc', 'int_rate', 'credit_history_length', 'total_rev_hi_lim', 
-                     'tot_cur_bal', 'revol_util', 'loan_amount'].includes(key)) {
-                    data[key] = parseFloat(value);
-                } else {
-                    data[key] = value;
+
+    labelFor(name) {
+        const label = this.form.querySelector(`label[for="${name}"]`);
+        return label ? label.textContent.trim() : name;
+    }
+
+    // ----- Scale -----
+
+    async loadScale() {
+        let bands = FALLBACK_BANDS;
+        let lowest = 'C';
+        try {
+            const response = await fetch('/api/v1/model/info');
+            if (response.ok) {
+                const info = await response.json();
+                if (info.rating_bands && info.rating_bands.length) {
+                    bands = info.rating_bands;
+                    lowest = info.lowest_rating || lowest;
                 }
             }
+        } catch (error) {
+            // Keep the fallback scale.
         }
-        
-        // Calculate loan burden if not provided
-        if (!data.loan_burden && data.loan_amount && data.annual_inc) {
-            data.loan_burden = data.loan_amount / (data.annual_inc + 1);
+
+        // Worst grade first; each band spans [from, to) in score points.
+        const ascending = [...bands].sort((a, b) => a.min_score - b.min_score);
+        const step = ascending.length > 1 ? ascending[1].min_score - ascending[0].min_score : 15;
+        this.bands = [{ rating: lowest, from: ascending[0].min_score - step }];
+        ascending.forEach((band) => this.bands.push({ rating: band.rating, from: band.min_score }));
+        this.bands.forEach((band, i) => {
+            const next = this.bands[i + 1];
+            band.to = next ? next.from : band.from + 2 * step;
+        });
+        this.scaleMin = this.bands[0].from;
+        this.scaleMax = this.bands[this.bands.length - 1].to;
+
+        const bandsEl = document.getElementById('scaleBands');
+        const axisEl = document.getElementById('scaleAxis');
+        bandsEl.replaceChildren();
+        axisEl.replaceChildren();
+        this.bands.forEach((band) => {
+            const segment = document.createElement('div');
+            segment.className = `scale-band grade-${band.rating}`;
+            segment.style.flex = `${band.to - band.from} 1 0`;
+            segment.dataset.rating = band.rating;
+            bandsEl.appendChild(segment);
+
+            const label = document.createElement('span');
+            label.textContent = band.rating;
+            label.style.flex = `${band.to - band.from} 1 0`;
+            label.dataset.rating = band.rating;
+            axisEl.appendChild(label);
+        });
+    }
+
+    renderScale(score, rating) {
+        const clamped = Math.min(Math.max(score, this.scaleMin), this.scaleMax);
+        const position = ((clamped - this.scaleMin) / (this.scaleMax - this.scaleMin)) * 100;
+        document.getElementById('scaleMarker').style.left = `${position}%`;
+        document.querySelectorAll('#scaleBands > *, #scaleAxis > *').forEach((el) => {
+            el.classList.toggle('current', el.dataset.rating === rating);
+        });
+        const band = this.bands.find((b) => b.rating === rating);
+        const range = band ? `, which covers scores from ${band.from} to ${band.to}` : '';
+        document.getElementById('scale').setAttribute(
+            'aria-label', `Score ${score.toFixed(0)} falls in grade ${rating}${range}`
+        );
+    }
+
+    // ----- Validation -----
+
+    fieldError(field) {
+        const raw = field.value.trim();
+        if (field.type === 'number' && field.validity.badInput) {
+            return 'Enter a number';
         }
-        
+        if (!raw) {
+            return REQUIRED_FIELDS.includes(field.name) ? 'Required' : '';
+        }
+        if (field.type !== 'number') {
+            return '';
+        }
+        const value = Number(raw);
+        if (!Number.isFinite(value)) {
+            return 'Enter a number';
+        }
+        if (STRICTLY_POSITIVE.includes(field.name) && value <= 0) {
+            return 'Must be greater than 0';
+        }
+        if (field.min !== '' && value < Number(field.min)) {
+            return `Must be at least ${field.min}`;
+        }
+        if (field.max !== '' && value > Number(field.max)) {
+            return `Must be at most ${Number(field.max).toLocaleString('en-US')}`;
+        }
+        return '';
+    }
+
+    setFieldError(field, message) {
+        const hint = document.getElementById(`${field.id}_hint`);
+        field.closest('.control').classList.toggle('invalid', Boolean(message));
+        hint.classList.toggle('error', Boolean(message));
+        hint.dataset.error = message;
+        if (message) {
+            field.setAttribute('aria-invalid', 'true');
+        } else {
+            field.removeAttribute('aria-invalid');
+        }
+    }
+
+    // ----- Scoring -----
+
+    payload() {
+        const data = {};
+        this.fields().forEach((field) => {
+            const raw = field.value.trim();
+            if (raw) {
+                data[field.name] = NUMERIC_FIELDS.includes(field.name) ? Number(raw) : raw;
+            }
+        });
         return data;
     }
-    
-    displayResults(result) {
-        // Update result elements
-        document.getElementById('creditScore').textContent = result.credit_score;
-        document.getElementById('defaultProb').textContent = (result.default_probability * 100).toFixed(2) + '%';
-        document.getElementById('riskLevel').textContent = result.risk_level;
-        
-        // Update result message
-        const messageEl = document.getElementById('resultMessage');
-        if (result.message) {
-            messageEl.textContent = result.message;
+
+    async score({ showErrors, focusResult = false }) {
+        clearTimeout(this.timer);
+        const errors = this.fields().map((field) => [field, this.fieldError(field)]);
+        const invalid = errors.filter(([, message]) => message);
+        if (showErrors) {
+            errors.forEach(([field, message]) => this.setFieldError(field, message));
         }
-        
-        // Style risk level based on credit rating
-        const riskEl = document.getElementById('riskLevel');
-        riskEl.className = 'risk-value';
-        
-        // Investment grade (AAA-BBB) - Green shades
-        if (['AAA', 'AA', 'A', 'BBB'].includes(result.risk_level)) {
-            riskEl.style.background = '#27ae60';  // Green
-            riskEl.style.color = 'white';
+        if (invalid.length) {
+            this.showEmpty();
+            if (showErrors) {
+                invalid[0][0].focus();
+            }
+            return;
         }
-        // Speculative grade (BB-B) - Yellow/Orange shades
-        else if (['BB', 'B'].includes(result.risk_level)) {
-            riskEl.style.background = '#f39c12';  // Orange
-            riskEl.style.color = 'white';
+
+        if (this.pending) {
+            this.pending.abort();
         }
-        // High risk (CCC-CC) - Dark orange/Red shades
-        else if (['CCC', 'CC'].includes(result.risk_level)) {
-            riskEl.style.background = '#e67e22';  // Dark orange
-            riskEl.style.color = 'white';
+        const controller = new AbortController();
+        this.pending = controller;
+        const payload = this.payload();
+        this.results.setAttribute('aria-busy', 'true');
+
+        try {
+            const response = await fetch('/api/v1/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+            });
+            let body = null;
+            try {
+                body = await response.json();
+            } catch (parseError) {
+                body = null;
+            }
+            if (!response.ok || !body) {
+                this.showError(this.describeError(response.status, body));
+                return;
+            }
+            this.render(body, payload);
+            if (focusResult) {
+                this.results.focus({ preventScroll: true });
+                this.results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                this.showError('Could not reach the scoring service. Check your connection and try again.');
+            }
+        } finally {
+            if (this.pending === controller) {
+                this.pending = null;
+                this.results.removeAttribute('aria-busy');
+            }
         }
-        // Very high risk (C-D) - Red
-        else {
-            riskEl.style.background = '#e74c3c';  // Red
-            riskEl.style.color = 'white';
-        }
-        
-        // Show results
-        this.showResults();
-        
-        // Show success notification
-        this.showNotification('Credit score calculated successfully!', 'success');
     }
-    
-    showResults() {
-        this.results.classList.remove('hidden');
-        this.results.scrollIntoView({ behavior: 'smooth' });
-    }
-    
-    hideResults() {
-        this.results.classList.add('hidden');
-    }
-    
-    clearForm() {
-        this.form.reset();
-        this.hideResults();
-        
-        // Clear any error states
-        const inputs = this.form.querySelectorAll('input, select');
-        inputs.forEach(input => this.clearInputError(input));
-        
-        this.showNotification('Form cleared', 'info');
-    }
-    
-    showLoading() {
-        this.loading.classList.remove('hidden');
-        this.submitBtn.disabled = true;
-        this.submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
-    }
-    
-    hideLoading() {
-        this.loading.classList.add('hidden');
-        this.submitBtn.disabled = false;
-        this.submitBtn.innerHTML = '<i class="fas fa-calculator"></i> Calculate Credit Score';
-    }
-    
-    showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            z-index: 1001;
-            animation: slideInRight 0.3s ease-out;
-            max-width: 300px;
-        `;
-        
-        // Set background color based on type
-        const colors = {
-            success: '#27ae60',
-            error: '#e74c3c',
-            info: '#3498db',
-            warning: '#f39c12'
-        };
-        notification.style.background = colors[type] || colors.info;
-        
-        notification.textContent = message;
-        
-        // Add to DOM
-        document.body.appendChild(notification);
-        
-        // Remove after 3 seconds
-        setTimeout(() => {
-            notification.style.animation = 'slideOutRight 0.3s ease-in';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
+
+    // Turn an API error into a readable message, marking the fields it names
+    // (a 422 from the API carries a list of {loc, msg}).
+    describeError(status, body) {
+        const detail = body && body.detail;
+        if (Array.isArray(detail)) {
+            const messages = detail.map((item) => {
+                const name = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : null;
+                const field = name ? document.getElementById(name) : null;
+                if (field && this.form.contains(field)) {
+                    this.setFieldError(field, item.msg);
+                    return `${this.labelFor(name)}: ${item.msg}`;
                 }
-            }, 300);
-        }, 3000);
+                return item.msg;
+            });
+            return messages.join('. ') || 'Some of the details are not valid.';
+        }
+        if (typeof detail === 'string') {
+            return `${detail}. Try again in a moment.`;
+        }
+        return `The scoring service returned an error (${status}). Try again in a moment.`;
+    }
+
+    // ----- Rendering -----
+
+    describeInput(feature, payload) {
+        const value = feature === 'loan_burden' ? payload.loan_amount : payload[feature];
+        if (value === undefined) {
+            return 'Not provided';
+        }
+        switch (feature) {
+            case 'int_rate':
+            case 'revol_util':
+                return percent(value, 1);
+            case 'credit_history_length':
+                return `${value} years`;
+            case 'loan_burden':
+                return `${percent((payload.loan_amount / (payload.annual_inc + 1)) * 100, 0)} of income`;
+            case 'purpose':
+            case 'verification_status': {
+                const option = this.form.querySelector(`#${feature} option[value="${value}"]`);
+                return option ? option.textContent : value;
+            }
+            default:
+                return money.format(value);
+        }
+    }
+
+    render(result, payload) {
+        const score = Number(result.credit_score);
+        document.getElementById('creditScore').textContent = score.toFixed(0);
+        document.getElementById('defaultProb').textContent = percent(result.default_probability * 100, 1);
+        const grade = document.getElementById('riskLevel');
+        grade.textContent = result.risk_level;
+        grade.className = `grade grade-${result.risk_level}`;
+        document.getElementById('riskDescription').textContent = result.risk_description || '';
+        this.renderScale(score, result.risk_level);
+
+        const rows = document.getElementById('breakdownRows');
+        rows.replaceChildren();
+        const addRow = (label, value, points, className = '') => {
+            const row = document.createElement('tr');
+            const name = document.createElement('th');
+            name.scope = 'row';
+            name.textContent = label;
+            const detail = document.createElement('td');
+            detail.className = 'value';
+            detail.textContent = value;
+            const number = document.createElement('td');
+            number.className = `num ${className}`;
+            number.textContent = points;
+            row.append(name, detail, number);
+            rows.appendChild(row);
+        };
+        addRow('Starting points', 'Average applicant', Number(result.base_points).toFixed(1));
+        const ordered = [...(result.points || [])].sort(
+            (a, b) => FEATURE_ORDER.indexOf(a.feature) - FEATURE_ORDER.indexOf(b.feature)
+        );
+        ordered.forEach((item) => {
+            const label = item.feature === 'loan_burden' ? 'Loan amount' : this.labelFor(item.feature);
+            const tone = item.points > 0.05 ? 'pos' : item.points < -0.05 ? 'neg' : '';
+            addRow(label, this.describeInput(item.feature, payload), signed(item.points), tone);
+        });
+        document.getElementById('breakdownTotal').textContent = score.toFixed(1);
+
+        const missing = (result.missing_fields || []).map((name) => this.labelFor(name));
+        document.getElementById('resultMessage').textContent = missing.length
+            ? `Not provided, so scored as the least favourable value: ${missing.join(', ')}.`
+            : '';
+
+        document.getElementById('mobileScore').textContent = score.toFixed(0);
+        document.getElementById('mobileGrade').textContent = result.risk_level;
+        this.mobileBar.hidden = false;
+        document.body.classList.add('has-result');
+
+        this.resultError.hidden = true;
+        this.resultEmpty.hidden = true;
+        this.resultBody.hidden = false;
+    }
+
+    hideResult() {
+        this.resultBody.hidden = true;
+        this.mobileBar.hidden = true;
+        document.body.classList.remove('has-result');
+    }
+
+    showEmpty() {
+        if (this.pending) {
+            this.pending.abort();
+        }
+        this.hideResult();
+        this.resultError.hidden = true;
+        this.resultEmpty.hidden = false;
+    }
+
+    showError(message) {
+        this.hideResult();
+        this.resultEmpty.hidden = true;
+        this.resultError.textContent = message;
+        this.resultError.hidden = false;
+    }
+
+    // ----- Presets -----
+
+    selectChip(name) {
+        this.chips.forEach((chip) => {
+            chip.setAttribute('aria-pressed', String(chip.dataset.preset === name));
+        });
+    }
+
+    applyPreset(name) {
+        Object.entries(PRESETS[name]).forEach(([key, value]) => {
+            const field = document.getElementById(key);
+            field.value = value;
+            this.setFieldError(field, '');
+        });
+        this.selectChip(name);
+        this.score({ showErrors: false });
+    }
+
+    clear() {
+        this.form.reset();
+        this.fields().forEach((field) => this.setFieldError(field, ''));
+        this.selectChip(null);
+        this.showEmpty();
+        document.getElementById('annual_inc').focus();
     }
 }
 
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
-
-// Initialize the UI when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new CreditRiskUI();
-});
-
-// Add some sample data functionality
-function fillSampleData() {
-    const sampleData = {
-        annual_inc: 75000,
-        int_rate: 12.5,
-        credit_history_length: 5.5,
-        purpose: 'debt_consolidation',
-        total_rev_hi_lim: 25000,
-        tot_cur_bal: 5000,
-        revol_util: 30,
-        verification_status: 'Verified',
-        loan_amount: 15000
-    };
-    
-    Object.entries(sampleData).forEach(([key, value]) => {
-        const element = document.getElementById(key);
-        if (element) {
-            element.value = value;
-        }
-    });
-    
-    // Trigger loan burden calculation
-    const loanAmountInput = document.getElementById('loan_amount');
-    if (loanAmountInput) {
-        loanAmountInput.dispatchEvent(new Event('input'));
-    }
-}
-
-// Add sample data button (for demo purposes)
-document.addEventListener('DOMContentLoaded', () => {
-    const sampleBtn = document.createElement('button');
-    sampleBtn.type = 'button';
-    sampleBtn.className = 'btn-secondary';
-    sampleBtn.innerHTML = '<i class="fas fa-flask"></i> Fill Sample Data';
-    sampleBtn.onclick = fillSampleData;
-    
-    const formActions = document.querySelector('.form-actions');
-    if (formActions) {
-        formActions.appendChild(sampleBtn);
-    }
 });

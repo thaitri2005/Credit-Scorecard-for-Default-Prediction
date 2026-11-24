@@ -1,15 +1,19 @@
 # Development dependencies
 -r requirements.txt
-pytest==7.4.3
-pytest-cov==6.0.0
-pytest-asyncio==0.21.1
-httpx==0.25.2
+
+# Tests
+pytest==9.2.0
+pytest-cov==7.1.0
+httpx==0.28.1
+
+# Lint and type checks
 black==23.11.0
-flake8==6.1.0
-mypy==1.7.1
+flake8==7.4.1
+mypy==2.4.1
+autoflake==2.2.0
 pre-commit==3.6.0
+
+# Notebooks
 jupyter==1.0.0
 matplotlib==3.8.2
 seaborn==0.13.0
-autoflake==2.2.0
-setuptools>=78.1.1
