@@ -1,10 +1,25 @@
 # Credit Risk Scorecard for Default Prediction
 
-A FastAPI service and web UI that scores a loan application: it returns a credit score, a default probability, a risk grade, and the points each input contributed.
+[![CI/CD](https://github.com/thaitri2005/Credit-Scorecard-for-Default-Prediction/actions/workflows/deploy.yml/badge.svg)](https://github.com/thaitri2005/Credit-Scorecard-for-Default-Prediction/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)
 
-The model is a logistic regression on Weight of Evidence (WOE) bins, trained on LendingClub loans in my Kaggle notebook, [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction). This repository wraps that model in an API with a Docker image, CI/CD and an Azure deployment.
+A credit scoring service for consumer loans. Enter an application and it returns a credit score, a risk grade, a probability of default, and the points each characteristic added or removed.
 
 **Live app:** <https://creditscorecardwoeiv-bgc3edb0fzgzdzfg.eastasia-01.azurewebsites.net/> (the first request can take up to a minute while the free tier wakes up)
+
+![The web UI scoring a sample application](docs/images/ui-light.png)
+
+The model is a logistic regression on Weight of Evidence (WOE) bins, trained on 872,666 LendingClub loans in my Kaggle notebook, [Credit Risk Scorecard for Default Prediction](https://www.kaggle.com/code/quangnguynngnht/credit-risk-scorecard-for-default-prediction). On the hold-out set it reached an AUC of 0.72 and a KS statistic of 0.33. This repository turns that model into a product: a REST API, a web UI, a Docker image, and a pipeline that tests, scans and deploys every change.
+
+## How it works
+
+<img src="docs/diagrams/architecture.png" alt="System architecture: a browser or API client calls the REST API, which passes validated applications to the scoring service" width="420">
+
+One container serves both the web UI and the API. The scoring service loads the fitted pipeline and model once at startup, verifies them against recorded checksums, and scores each validated application.
+
+- [Architecture](docs/architecture.md): components, the request path, and the release pipeline
+- [Scoring](docs/scoring.md): how an application becomes a score, a grade and a points breakdown
 
 ## Run it
 
@@ -31,7 +46,7 @@ Or pull the published image:
 docker run -p 8000:80 thaitri2005/credit_scorecard_for_default_prediction:latest
 ```
 
-Each option serves the UI at <http://localhost:8000> and the interactive API docs at <http://localhost:8000/docs>.
+Each option serves the UI at <http://localhost:8000> and the interactive API reference at <http://localhost:8000/docs>.
 
 ## API
 
@@ -39,7 +54,7 @@ Each option serves the UI at <http://localhost:8000> and the interactive API doc
 |----------|---------|
 | `POST /api/v1/predict` | Score one application |
 | `POST /api/v1/predict/batch` | Score up to 1000 applications |
-| `GET /api/v1/model/info` | Features, scoring parameters and grade bands |
+| `GET /api/v1/model/info` | Characteristics, scoring parameters and grade bands |
 | `GET /api/v1/health` | Health check; `503` if the model is not loaded |
 | `GET /info` | Service name, version and endpoints |
 
@@ -57,9 +72,7 @@ Each option serves the UI at <http://localhost:8000> and the interactive API doc
 | `tot_cur_bal` | no | Total current balance in USD |
 | `revol_util` | no | Revolving utilization in percent |
 
-The model uses the ratio of loan amount to income. Callers that already have it can send `loan_burden` instead of `loan_amount`.
-
-An optional field left out is assigned its least favorable attribute and listed in `missing_fields`.
+Callers that already have the ratio of loan amount to income can send `loan_burden` instead of `loan_amount`. An optional field left out is assigned its least favorable attribute and listed in `missing_fields`.
 
 ### Example
 
@@ -103,24 +116,12 @@ curl -X POST "http://localhost:8000/api/v1/predict" \
 }
 ```
 
-## Scoring
+## Risk grades
 
-The score follows the standard scorecard scaling:
+Scores from this model range from 511 to 646 and map to nine grades.
 
-```text
-Score = Offset - Factor × ln(odds of default)
-Factor = PDO / ln(2)
-Offset = BaseScore - Factor × ln(BaseOdds)
-```
-
-with PDO = 20, BaseScore = 600 and BaseOdds = 50:1, so 600 points means 50:1 odds of repaying and every 20 points doubles those odds.
-
-The same number can be read as a scorecard: 562 base points plus the points of the bin each input falls into. `models/scorecard.csv` lists the bins and their points, and the API returns the per-input points with each prediction.
-
-Scores from this model range from 511 to 646 and map to nine risk grades:
-
-| Score | Grade | Meaning | Default probability |
-|-------|-------|---------|---------------------|
+| Score | Grade | Meaning | Probability of default |
+|-------|-------|---------|------------------------|
 | 620 and above | AAA | Minimal default risk | under 1% |
 | 605-619 | AA | Very low default risk | 1% - 1.7% |
 | 590-604 | A | Low default risk | 1.7% - 2.8% |
@@ -131,21 +132,24 @@ Scores from this model range from 511 to 646 and map to nine risk grades:
 | 515-529 | CC | Very high default risk | 18% - 28% |
 | below 515 | C | Highest default risk this model assigns | above 28% |
 
-The grades use a familiar letter scale but are internal to this model, not agency credit ratings. The scaling parameters and grade bands are set in `models/model_metadata.json`.
+The grades use a familiar letter scale but are internal to this model, not agency credit ratings. [Scoring](docs/scoring.md) explains the calculation.
 
-## Project structure
+## Project layout
 
 ```text
 app/
-  main.py            App entrypoint, middleware, error handlers
-  api/routes.py      Endpoints
-  api/schemas.py     Request and response models
-  utils/helpers.py   Preprocessing transformers and the scoring service
-  static/            Web UI
-models/              Trained model, preprocessing pipeline, scorecard, metadata
-notebooks/           Training notebooks
-tests/               API and model tests
-.github/workflows/   CI/CD pipeline
+  main.py                  App entrypoint, middleware, error handlers
+  config.py                Version, logging, service metadata
+  api/routes.py            Endpoints
+  api/schemas.py           Request and response models
+  scoring/service.py       Loads the model; scores, grades and attributes points
+  scoring/transformers.py  Preprocessing steps of the fitted pipeline
+  static/                  Web UI
+models/                    Trained model, preprocessing pipeline, scorecard, metadata
+notebooks/                 Training notebooks
+docs/                      Architecture and scoring guides, diagrams
+tests/                     API and scoring tests
+.github/workflows/         CI/CD pipeline
 ```
 
 ## Development
@@ -158,8 +162,6 @@ mypy . --ignore-missing-imports
 ```
 
 scikit-learn, numpy and pandas are pinned to the versions the model was saved with; keep them in step with the files in `models/`.
-
-Pushes and pull requests to `main` run these checks and a Trivy scan of the Docker image. On a push, once both pass, the image is pushed to Docker Hub and Azure Container Registry and deployed to Azure App Service.
 
 ## License
 

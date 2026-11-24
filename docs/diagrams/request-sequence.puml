@@ -1,0 +1,68 @@
+@startuml
+title Scoring one application
+
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 15
+skinparam dpi 160
+skinparam titleFontSize 20
+skinparam ArrowColor #10293f
+skinparam ArrowFontColor #556270
+skinparam ArrowFontSize 13
+skinparam sequence {
+  LifeLineBorderColor #83909d
+  LifeLineBackgroundColor #e4eef8
+  ParticipantBorderColor #10293f
+  ParticipantBackgroundColor #ffffff
+  ParticipantFontColor #14212e
+  GroupBorderColor #83909d
+  GroupBackgroundColor #f1f3f5
+  GroupFontColor #10293f
+  BoxBorderColor #c3ccd5
+  BoxBackgroundColor #f1f3f5
+}
+skinparam NoteBackgroundColor #f1f3f5
+skinparam NoteBorderColor #c3ccd5
+skinparam NoteFontColor #14212e
+
+participant "Browser or\nAPI client" as C
+box "Credit Risk Scorecard service"
+participant "API route" as R
+participant "Request\nschema" as V
+participant "Scoring\nservice" as S
+participant "Pipeline\nand model" as M
+end box
+
+C -> R: POST /api/v1/predict
+activate R
+R -> V: validate fields
+activate V
+
+alt invalid application
+  V --> R: field errors
+  R --> C: 422 with one message per field
+else valid application
+  V --> R: typed application
+  deactivate V
+  R -> S: predict(application)
+  activate S
+  S -> S: derive loan burden,\nmark missing optional fields
+  S -> M: transform to WOE
+  activate M
+  M --> S: WOE per characteristic
+  S -> M: predict probability
+  M --> S: probability of default
+  deactivate M
+  S -> S: scale to score, look up grade,\ncompute points per characteristic
+  S --> R: score, probability, grade, points
+  deactivate S
+  R --> C: 200 with the assessment
+end
+deactivate R
+
+note over S, M
+  The pipeline and model are loaded once at startup
+  and verified against recorded SHA-256 checksums.
+end note
+@enduml

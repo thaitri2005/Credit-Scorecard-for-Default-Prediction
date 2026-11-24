@@ -1,0 +1,66 @@
+direction: down
+title: |md
+  # Build and release pipeline
+| {near: top-center}
+
+push: |md
+  **Push or pull request to main**
+
+  starts both checks
+| {shape: rectangle; class: actor}
+checks: "Checks, run in parallel" {
+  class: group
+  test: |md
+    **Test**
+
+    black, flake8, mypy,
+
+    pytest with a coverage gate
+  | {shape: rectangle; class: box}
+  scan: |md
+    **Image scan**
+
+    builds the image; Trivy fails on
+
+    fixable critical or high findings
+  | {shape: rectangle; class: box}
+}
+gate: |md
+  **Release gate**
+
+  both checks pass and
+
+  the event is a push to main
+| {shape: rectangle; class: key}
+release: "Release" {
+  class: group
+  build: |md
+    **Build image**
+
+    tagged with the commit SHA
+  | {shape: rectangle; class: box}
+  hub: |md
+    **Docker Hub**
+
+    public image
+  | {shape: rectangle; class: box}
+  acr: |md
+    **Azure Container Registry**
+
+    same image, retagged
+  | {shape: rectangle; class: box}
+  app: |md
+    **Azure App Service**
+
+    runs the image for that commit
+  | {shape: rectangle; class: good}
+  build -> hub: "push" {style.stroke: "#556270"; style.font-color: "#556270"; style.font-size: 15}
+  hub -> acr: "copy" {style.stroke: "#556270"; style.font-color: "#556270"; style.font-size: 15}
+  acr -> app: "deploy by commit tag" {style.stroke: "#556270"; style.font-color: "#556270"; style.font-size: 15}
+}
+
+push -> checks.test
+push -> checks.scan
+checks.test -> gate
+checks.scan -> gate
+gate -> release.build

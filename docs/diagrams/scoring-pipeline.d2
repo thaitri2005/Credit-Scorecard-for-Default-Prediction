@@ -1,0 +1,72 @@
+direction: down
+title: |md
+  # From application to credit score
+| {near: top-center}
+
+input: |md
+  **Loan application**
+
+  income, credit history, verification,
+
+  loan amount, rate, purpose, credit profile
+| {shape: rectangle; class: actor}
+derive: |md
+  **Derive loan burden**
+
+  loan amount ÷ (income + 1)
+| {shape: rectangle; class: box}
+bin: |md
+  **Assign attributes**
+
+  numeric values fall into fitted bins;
+
+  categories map directly
+| {shape: rectangle; class: box}
+woe: |md
+  **Look up Weight of Evidence**
+
+  ln(share of good ÷ share of bad) for each attribute
+| {shape: rectangle; class: box}
+model: |md
+  **Logistic regression**
+
+  ln(odds of default) = intercept + Σ coefficient × WOE
+| {shape: rectangle; class: key}
+pd: |md
+  **Probability of default**
+
+  1 ÷ (1 + e^(−ln odds))
+
+  example: 5.4%
+| {shape: rectangle; class: good}
+score: |md
+  **Credit score**
+
+  Offset − Factor × ln(odds)
+
+  600 points at 50:1 odds, 20 points double the odds
+
+  example: 569.55
+| {shape: rectangle; class: good}
+points: |md
+  **Score attribution**
+
+  base 562 + points per characteristic,
+
+  each −Factor × coefficient × WOE
+| {shape: rectangle; class: good}
+grade: |md
+  **Risk grade**
+
+  AAA to C by score band
+
+  example: BB
+| {shape: rectangle; class: good}
+input -> derive
+derive -> bin
+bin -> woe
+woe -> model
+model -> pd
+model -> score
+model -> points
+score -> grade
