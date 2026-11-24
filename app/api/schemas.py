@@ -116,7 +116,7 @@ class CreditScoreResponse(BaseModel):
         default_factory=list,
         description=(
             "Optional inputs that were not supplied. Each is scored like the "
-            "least favourable value of that input."
+            "least favorable value of that input."
         ),
     )
     message: Optional[str] = Field(None, description="Additional information")

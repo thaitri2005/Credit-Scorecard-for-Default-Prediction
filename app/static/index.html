@@ -8,6 +8,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script>
+        // Apply a saved theme before first paint.
+        try {
+            document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light';
+        } catch (error) {
+            document.documentElement.dataset.theme = 'light';
+        }
+    </script>
 </head>
 <body>
     <header class="masthead">
@@ -48,7 +56,7 @@
                         <div class="field">
                             <label for="annual_inc">Annual income</label>
                             <div class="control"><span class="unit">$</span>
-                                <input type="number" id="annual_inc" name="annual_inc" inputmode="decimal" step="any" min="1" max="10000000" required aria-describedby="annual_inc_hint">
+                                <input type="number" id="annual_inc" name="annual_inc" inputmode="decimal" step="any" min="0" max="10000000" required aria-describedby="annual_inc_hint">
                             </div>
                             <p class="hint" id="annual_inc_hint" data-hint="Gross, per annum"></p>
                         </div>
@@ -81,7 +89,7 @@
                         <div class="field">
                             <label for="loan_amount">Loan amount</label>
                             <div class="control"><span class="unit">$</span>
-                                <input type="number" id="loan_amount" name="loan_amount" inputmode="decimal" step="any" min="1" required aria-describedby="loan_amount_hint">
+                                <input type="number" id="loan_amount" name="loan_amount" inputmode="decimal" step="any" min="0" required aria-describedby="loan_amount_hint">
                             </div>
                             <p class="hint" id="loan_amount_hint" data-hint="Principal requested"></p>
                         </div>
@@ -145,7 +153,7 @@
                             <p class="hint" id="revol_util_hint" data-hint="Balance as a share of limit"></p>
                         </div>
                     </div>
-                    <p class="fieldset-note">Fields left blank are assigned the least favourable attribute.</p>
+                    <p class="fieldset-note">Fields left blank are assigned the least favorable attribute.</p>
                 </fieldset>
 
                 <div class="actions">

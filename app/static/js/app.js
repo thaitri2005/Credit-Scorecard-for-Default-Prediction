@@ -73,13 +73,14 @@ class CreditRiskUI {
         });
         this.fields().forEach((field) => {
             field.addEventListener('input', () => {
+                field.dataset.edited = 'true';
                 this.selectChip(null);
                 this.setFieldError(field, '');
                 clearTimeout(this.timer);
                 this.timer = setTimeout(() => this.score({ showErrors: false }), 300);
             });
             field.addEventListener('blur', () => {
-                if (field.value.trim()) {
+                if (field.value.trim() || field.dataset.edited) {
                     this.setFieldError(field, this.fieldError(field));
                 }
             });
@@ -110,7 +111,9 @@ class CreditRiskUI {
             }, { threshold: 0.2 }).observe(this.results);
         }
 
-        this.loadScale().then(() => this.applyPreset('typical'));
+        this.buildScale(FALLBACK_BANDS, 'C');
+        this.applyPreset('typical');
+        this.refreshScale();
     }
 
     setTheme(theme) {
@@ -129,22 +132,26 @@ class CreditRiskUI {
 
     // ----- Scale -----
 
-    async loadScale() {
-        let bands = FALLBACK_BANDS;
-        let lowest = 'C';
+    // Replace the built-in scale with the model's own bands once they arrive.
+    async refreshScale() {
         try {
             const response = await fetch('/api/v1/model/info');
-            if (response.ok) {
-                const info = await response.json();
-                if (info.rating_bands && info.rating_bands.length) {
-                    bands = info.rating_bands;
-                    lowest = info.lowest_rating || lowest;
+            if (!response.ok) {
+                return;
+            }
+            const info = await response.json();
+            if (info.rating_bands && info.rating_bands.length) {
+                this.buildScale(info.rating_bands, info.lowest_rating || 'C');
+                if (this.last) {
+                    this.renderScale(this.last.score, this.last.rating);
                 }
             }
         } catch (error) {
-            // Keep the fallback scale.
+            // Keep the built-in scale.
         }
+    }
 
+    buildScale(bands, lowest) {
         // Worst grade first; each band spans [from, to) in score points.
         const ascending = [...bands].sort((a, b) => a.min_score - b.min_score);
         const step = ascending.length > 1 ? ascending[1].min_score - ascending[0].min_score : 15;
@@ -183,10 +190,18 @@ class CreditRiskUI {
         document.querySelectorAll('#scaleBands > *, #scaleAxis > *').forEach((el) => {
             el.classList.toggle('current', el.dataset.rating === rating);
         });
-        const band = this.bands.find((b) => b.rating === rating);
-        const range = band ? `, which covers scores from ${band.from} to ${band.to}` : '';
+        const index = this.bands.findIndex((b) => b.rating === rating);
+        const band = this.bands[index];
+        let range = '';
+        if (band && index === 0) {
+            range = `, which covers scores below ${band.to}`;
+        } else if (band && index === this.bands.length - 1) {
+            range = `, which covers scores of ${band.from} and above`;
+        } else if (band) {
+            range = `, which covers scores from ${band.from} up to ${band.to}`;
+        }
         document.getElementById('scale').setAttribute(
-            'aria-label', `Score ${score.toFixed(0)} falls in grade ${rating}${range}`
+            'aria-label', `Score ${Math.floor(score)} falls in grade ${rating}${range}`
         );
     }
 
@@ -282,6 +297,9 @@ class CreditRiskUI {
             }
             if (!response.ok || !body) {
                 this.showError(this.describeError(response.status, body));
+                if (focusResult) {
+                    this.results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
                 return;
             }
             this.render(body, payload);
@@ -301,7 +319,26 @@ class CreditRiskUI {
         }
     }
 
-    // Turn an API error into a readable message, marking the fields it names
+    // Reword an API validation message for display beside a field.
+    plainMessage(message) {
+        const text = String(message).replace(/^Value error, /, '');
+        const rules = [
+            [/^Input should be less than or equal to (.+)$/, 'Must be at most $1'],
+            [/^Input should be greater than or equal to (.+)$/, 'Must be at least $1'],
+            [/^Input should be greater than (.+)$/, 'Must be greater than $1'],
+            [/^Input should be a valid number.*$/, 'Enter a number'],
+            [/^Input should be a finite number$/, 'Enter a number'],
+            [/^Field required$/, 'Required'],
+        ];
+        for (const [pattern, replacement] of rules) {
+            if (pattern.test(text)) {
+                return text.replace(pattern, replacement);
+            }
+        }
+        return text;
+    }
+
+    // Turn an API error into a message, marking the fields it names
     // (a 422 from the API carries a list of {loc, msg}).
     describeError(status, body) {
         const detail = body && body.detail;
@@ -309,18 +346,20 @@ class CreditRiskUI {
             const messages = detail.map((item) => {
                 const name = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : null;
                 const field = name ? document.getElementById(name) : null;
+                const message = this.plainMessage(item.msg);
                 if (field && this.form.contains(field)) {
-                    this.setFieldError(field, item.msg);
-                    return `${this.labelFor(name)}: ${item.msg}`;
+                    this.setFieldError(field, message);
+                    return `${this.labelFor(name)}: ${message}`;
                 }
-                return item.msg;
+                return message;
             });
             return messages.join('. ') || 'One or more application details are not valid.';
         }
-        if (typeof detail === 'string') {
-            return `${detail}. Resubmit shortly.`;
+        if (status >= 200 && status < 300) {
+            return 'The scoring service returned an unreadable response. Resubmit the application.';
         }
-        return `The scoring service returned an error (${status}). Resubmit shortly.`;
+        return `The assessment could not be completed (error ${status}). Resubmit the application; `
+            + 'if the problem persists, contact the system administrator.';
     }
 
     // ----- Rendering -----
@@ -335,9 +374,11 @@ class CreditRiskUI {
             case 'revol_util':
                 return percent(value, 1);
             case 'credit_history_length':
-                return `${value} years`;
-            case 'loan_burden':
-                return `${percent((payload.loan_amount / (payload.annual_inc + 1)) * 100, 0)} of income`;
+                return `${value} ${value === 1 ? 'year' : 'years'}`;
+            case 'loan_burden': {
+                const share = (payload.loan_amount / (payload.annual_inc + 1)) * 100;
+                return share > 999 ? 'Over 999% of income' : `${percent(share, 0)} of income`;
+            }
             case 'purpose':
             case 'verification_status': {
                 const option = this.form.querySelector(`#${feature} option[value="${value}"]`);
@@ -350,7 +391,11 @@ class CreditRiskUI {
 
     render(result, payload) {
         const score = Number(result.credit_score);
-        document.getElementById('creditScore').textContent = score.toFixed(0);
+        // Scores are shown rounded down so a figure never appears to cross a
+        // grade threshold it has not reached.
+        const wholeScore = String(Math.floor(score));
+        this.last = { score, rating: result.risk_level };
+        document.getElementById('creditScore').textContent = wholeScore;
         document.getElementById('defaultProb').textContent = percent(result.default_probability * 100, 1);
         const grade = document.getElementById('riskLevel');
         grade.textContent = result.risk_level;
@@ -383,43 +428,46 @@ class CreditRiskUI {
             const tone = item.points > 0.05 ? 'pos' : item.points < -0.05 ? 'neg' : '';
             addRow(label, this.describeInput(item.feature, payload), signed(item.points), tone);
         });
-        document.getElementById('breakdownTotal').textContent = score.toFixed(1);
+        document.getElementById('breakdownTotal').textContent = (Math.floor(score * 10) / 10).toFixed(1);
 
         const missing = (result.missing_fields || []).map((name) => this.labelFor(name));
         document.getElementById('resultMessage').textContent = missing.length
-            ? `Not provided; assigned the least favourable attribute: ${missing.join(', ')}.`
+            ? `Not provided; assigned the least favorable attribute: ${missing.join(', ')}.`
             : '';
 
-        document.getElementById('mobileScore').textContent = score.toFixed(0);
-        document.getElementById('mobileGrade').textContent = result.risk_level;
-        this.mobileBar.hidden = false;
-        document.body.classList.add('has-result');
+        this.setSummary(wholeScore, result.risk_level);
 
         this.resultError.hidden = true;
         this.resultEmpty.hidden = true;
         this.resultBody.hidden = false;
     }
 
-    hideResult() {
-        this.resultBody.hidden = true;
-        this.mobileBar.hidden = true;
-        document.body.classList.remove('has-result');
+    // The summary bar pinned to the bottom of narrow screens.
+    setSummary(score, status) {
+        document.getElementById('mobileScore').textContent = score;
+        document.getElementById('mobileGrade').textContent = status;
+        this.mobileBar.hidden = false;
+        document.body.classList.add('has-result');
     }
 
     showEmpty() {
         if (this.pending) {
             this.pending.abort();
         }
-        this.hideResult();
+        this.last = null;
+        this.resultBody.hidden = true;
         this.resultError.hidden = true;
         this.resultEmpty.hidden = false;
+        this.setSummary('', 'Application incomplete');
     }
 
     showError(message) {
-        this.hideResult();
+        this.last = null;
+        this.resultBody.hidden = true;
         this.resultEmpty.hidden = true;
         this.resultError.textContent = message;
         this.resultError.hidden = false;
+        this.setSummary('', 'Assessment unavailable');
     }
 
     // ----- Presets -----
@@ -434,6 +482,7 @@ class CreditRiskUI {
         Object.entries(PRESETS[name]).forEach(([key, value]) => {
             const field = document.getElementById(key);
             field.value = value;
+            delete field.dataset.edited;
             this.setFieldError(field, '');
         });
         this.selectChip(name);
@@ -442,7 +491,10 @@ class CreditRiskUI {
 
     clear() {
         this.form.reset();
-        this.fields().forEach((field) => this.setFieldError(field, ''));
+        this.fields().forEach((field) => {
+            delete field.dataset.edited;
+            this.setFieldError(field, '');
+        });
         this.selectChip(null);
         this.showEmpty();
         document.getElementById('annual_inc').focus();

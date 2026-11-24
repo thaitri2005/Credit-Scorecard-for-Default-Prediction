@@ -57,7 +57,7 @@ def _describe(result: dict) -> str:
     message = result.get("risk_description") or "Prediction completed"
     missing = result.get("missing_fields") or []
     if missing:
-        message += f". Not provided, scored conservatively: {', '.join(missing)}"
+        message += f". Not provided; assigned the least favorable attribute: {', '.join(missing)}"
     return message
 
 

@@ -313,6 +313,10 @@ label {
     box-shadow: 0 0 0 1px var(--danger);
 }
 
+.control.invalid:focus-within {
+    box-shadow: 0 0 0 3px var(--danger);
+}
+
 .control input,
 .control select {
     flex: 1;
@@ -462,18 +466,25 @@ h2 {
     display: grid;
     grid-template-columns: auto auto 1fr;
     gap: 8px 28px;
-    align-items: end;
+    align-items: start;
     margin-top: 14px;
 }
 
+/* Labels share one line and the figures share the next, whatever their size. */
 .stat {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    display: grid;
+    grid-template-rows: auto 58px;
+    gap: 4px;
+    align-items: center;
+}
+
+.stat .grade {
+    justify-self: start;
 }
 
 .stat:last-child {
     text-align: right;
+    justify-items: end;
 }
 
 .stat-label {
@@ -736,7 +747,9 @@ h3 {
 
     .stat:last-child {
         grid-column: 1 / -1;
+        grid-template-rows: auto auto;
         text-align: left;
+        justify-items: start;
     }
 
     .stat-value.score {

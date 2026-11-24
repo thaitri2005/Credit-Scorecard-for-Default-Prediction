@@ -350,7 +350,7 @@ LOWEST_RATING: Dict[str, str] = {
 }
 
 # Inputs that may be missing. A missing value is scored like the least
-# favourable real bin of that feature, so leaving a field blank can never beat
+# favorable real bin of that feature, so leaving a field blank can never beat
 # disclosing it.
 OPTIONAL_NUMERIC_FEATURES = (
     "total_rev_hi_lim",
@@ -478,7 +478,7 @@ class CreditRiskService:
         return found
 
     def _find_missing_woe(self) -> Dict[str, float]:
-        """WOE used for a missing optional input: the least favourable bin that
+        """WOE used for a missing optional input: the least favorable bin that
         real borrowers fall into (the imputation-artefact bin is excluded)."""
         woe = dict(self.pipeline.steps)["woe_transformer"]
         result: Dict[str, float] = {}

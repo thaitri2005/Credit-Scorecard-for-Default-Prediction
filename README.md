@@ -41,6 +41,7 @@ Each option serves the UI at <http://localhost:8000> and the interactive API doc
 | `POST /api/v1/predict/batch` | Score up to 1000 applications |
 | `GET /api/v1/model/info` | Features, scoring parameters and grade bands |
 | `GET /api/v1/health` | Health check; `503` if the model is not loaded |
+| `GET /info` | Service name, version and endpoints |
 
 ### Request fields
 
@@ -58,7 +59,7 @@ Each option serves the UI at <http://localhost:8000> and the interactive API doc
 
 The model uses the ratio of loan amount to income. Callers that already have it can send `loan_burden` instead of `loan_amount`.
 
-An optional field left out is scored as its least favourable value and listed in `missing_fields`.
+An optional field left out is assigned its least favorable attribute and listed in `missing_fields`.
 
 ### Example
 
@@ -114,7 +115,7 @@ Offset = BaseScore - Factor × ln(BaseOdds)
 
 with PDO = 20, BaseScore = 600 and BaseOdds = 50:1, so 600 points means 50:1 odds of repaying and every 20 points doubles those odds.
 
-The same number can be read as a scorecard: 562 base points plus the points of the bin each input falls into. `models/scorecard.csv` lists every bin and its points, and the API returns the per-input points with each prediction.
+The same number can be read as a scorecard: 562 base points plus the points of the bin each input falls into. `models/scorecard.csv` lists the bins and their points, and the API returns the per-input points with each prediction.
 
 Scores from this model range from 511 to 646 and map to nine risk grades:
 
@@ -128,7 +129,7 @@ Scores from this model range from 511 to 646 and map to nine risk grades:
 | 545-559 | B | Above-average default risk | 7.4% - 12% |
 | 530-544 | CCC | High default risk | 12% - 18% |
 | 515-529 | CC | Very high default risk | 18% - 28% |
-| below 515 | C | Highest default risk | above 28% |
+| below 515 | C | Highest default risk this model assigns | above 28% |
 
 The grades use a familiar letter scale but are internal to this model, not agency credit ratings. The scaling parameters and grade bands are set in `models/model_metadata.json`.
 
@@ -158,7 +159,7 @@ mypy . --ignore-missing-imports
 
 scikit-learn, numpy and pandas are pinned to the versions the model was saved with; keep them in step with the files in `models/`.
 
-Every push and pull request runs these checks and a Trivy scan of the Docker image. On `main`, once both pass, the image is pushed to Docker Hub and Azure Container Registry and deployed to Azure App Service.
+Pushes and pull requests to `main` run these checks and a Trivy scan of the Docker image. On a push, once both pass, the image is pushed to Docker Hub and Azure Container Registry and deployed to Azure App Service.
 
 ## License
 
