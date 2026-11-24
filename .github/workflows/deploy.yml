@@ -41,9 +41,11 @@ jobs:
         run: pytest -v --cov=app --cov-report=xml --cov-fail-under=75
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          file: ./coverage.xml
+          # Without this token Codecov rate-limits the upload (HTTP 429).
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
           flags: unittests
           name: codecov-umbrella
 
@@ -95,6 +97,10 @@ jobs:
     concurrency:
       group: deploy-production
       cancel-in-progress: false
+    # id-token lets this job (and only this job) log in to Azure via OIDC.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -116,10 +122,14 @@ jobs:
             thaitri2005/credit_scorecard_for_default_prediction:${{ github.sha }}
 
       # Azure Container Registry push
+      # OIDC login: Azure trusts runs from this repo's main branch through a
+      # federated credential, so there is no client secret to expire.
       - name: Log in to Azure
-        uses: azure/login@v2
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Log in to Azure Container Registry
         run: az acr login --name creditscorecardwoeiv
@@ -140,5 +150,5 @@ jobs:
           az webapp config container set \
             --name creditscorecardwoeiv \
             --resource-group docker-fastapi-credit-scorecard \
-            --docker-custom-image-name creditscorecardwoeiv.azurecr.io/credit-risk-api:${{ github.sha }} \
-            --docker-registry-server-url https://creditscorecardwoeiv.azurecr.io
+            --container-image-name creditscorecardwoeiv.azurecr.io/credit-risk-api:${{ github.sha }} \
+            --container-registry-url https://creditscorecardwoeiv.azurecr.io
