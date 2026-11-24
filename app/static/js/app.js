@@ -85,6 +85,24 @@ class CreditRiskUI {
             });
         });
 
+        this.themeToggle = document.getElementById('themeToggle');
+        this.themeToggle.addEventListener('click', () => {
+            const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+            this.setTheme(next);
+            try {
+                localStorage.setItem('theme', next);
+            } catch (error) {
+                // The choice simply lasts for this visit.
+            }
+        });
+        let savedTheme = null;
+        try {
+            savedTheme = localStorage.getItem('theme');
+        } catch (error) {
+            savedTheme = null;
+        }
+        this.setTheme(savedTheme || document.documentElement.dataset.theme || 'light');
+
         // The bottom summary bar is only useful while the assessment is off screen.
         if ('IntersectionObserver' in window) {
             new IntersectionObserver(([entry]) => {
@@ -93,6 +111,11 @@ class CreditRiskUI {
         }
 
         this.loadScale().then(() => this.applyPreset('typical'));
+    }
+
+    setTheme(theme) {
+        document.documentElement.dataset.theme = theme;
+        this.themeToggle.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
     }
 
     fields() {
@@ -268,7 +291,7 @@ class CreditRiskUI {
             }
         } catch (error) {
             if (error.name !== 'AbortError') {
-                this.showError('Could not reach the scoring service. Check your connection and try again.');
+                this.showError('The scoring service could not be reached. Check the connection and resubmit.');
             }
         } finally {
             if (this.pending === controller) {
@@ -292,12 +315,12 @@ class CreditRiskUI {
                 }
                 return item.msg;
             });
-            return messages.join('. ') || 'Some of the details are not valid.';
+            return messages.join('. ') || 'One or more application details are not valid.';
         }
         if (typeof detail === 'string') {
-            return `${detail}. Try again in a moment.`;
+            return `${detail}. Resubmit shortly.`;
         }
-        return `The scoring service returned an error (${status}). Try again in a moment.`;
+        return `The scoring service returned an error (${status}). Resubmit shortly.`;
     }
 
     // ----- Rendering -----
@@ -351,7 +374,7 @@ class CreditRiskUI {
             row.append(name, detail, number);
             rows.appendChild(row);
         };
-        addRow('Starting points', 'Average applicant', Number(result.base_points).toFixed(1));
+        addRow('Base score', 'Population average', Number(result.base_points).toFixed(1));
         const ordered = [...(result.points || [])].sort(
             (a, b) => FEATURE_ORDER.indexOf(a.feature) - FEATURE_ORDER.indexOf(b.feature)
         );
@@ -364,7 +387,7 @@ class CreditRiskUI {
 
         const missing = (result.missing_fields || []).map((name) => this.labelFor(name));
         document.getElementById('resultMessage').textContent = missing.length
-            ? `Not provided, so scored as the least favourable value: ${missing.join(', ')}.`
+            ? `Not provided; assigned the least favourable attribute: ${missing.join(', ')}.`
             : '';
 
         document.getElementById('mobileScore').textContent = score.toFixed(0);

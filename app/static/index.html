@@ -10,26 +10,35 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <header class="topbar">
-        <div class="wrap topbar-inner">
-            <span class="brand">Credit Risk Scorecard</span>
-            <nav class="topnav" aria-label="Reference">
-                <a href="/docs">API docs</a>
-                <a href="/api/v1/model/info">Model info</a>
+    <header class="masthead">
+        <div class="wrap masthead-inner">
+            <div class="masthead-title">
+                <span class="brand">Credit Risk Scorecard</span>
+                <span class="brand-sub">Consumer loan application scoring</span>
+            </div>
+            <nav class="masthead-nav" aria-label="Reference">
+                <a href="/docs">API reference</a>
+                <a href="/api/v1/model/info">Model specification</a>
+                <button type="button" class="theme-toggle" id="themeToggle">Dark mode</button>
             </nav>
         </div>
     </header>
 
     <main class="wrap workspace">
         <section class="inputs" aria-labelledby="inputsHeading">
-            <h1 id="inputsHeading">Loan application</h1>
-            <p class="lede">Enter an applicant's details to estimate default risk. The score updates as you type.</p>
+            <div class="section-head">
+                <div>
+                    <h1 id="inputsHeading">Loan application</h1>
+                    <p class="lede">Enter the applicant and facility details to obtain a credit score, risk grade and probability of default.</p>
+                </div>
+                <button type="button" class="btn" id="clearBtn">Clear form</button>
+            </div>
 
-            <div class="presets" role="group" aria-label="Example applicants">
-                <span class="presets-label">Examples</span>
-                <button type="button" class="chip" data-preset="strong">Strong</button>
-                <button type="button" class="chip" data-preset="typical">Typical</button>
-                <button type="button" class="chip" data-preset="stretched">Stretched</button>
+            <div class="presets" role="group" aria-label="Sample profiles">
+                <span class="presets-label">Sample profiles</span>
+                <button type="button" class="chip" data-preset="strong">Prime</button>
+                <button type="button" class="chip" data-preset="typical">Near-prime</button>
+                <button type="button" class="chip" data-preset="stretched">Subprime</button>
             </div>
 
             <form id="loanForm" novalidate>
@@ -41,7 +50,7 @@
                             <div class="control"><span class="unit">$</span>
                                 <input type="number" id="annual_inc" name="annual_inc" inputmode="decimal" step="any" min="1" max="10000000" required aria-describedby="annual_inc_hint">
                             </div>
-                            <p class="hint" id="annual_inc_hint" data-hint="Before tax, per year"></p>
+                            <p class="hint" id="annual_inc_hint" data-hint="Gross, per annum"></p>
                         </div>
                         <div class="field">
                             <label for="credit_history_length">Credit history</label>
@@ -49,7 +58,7 @@
                                 <input type="number" id="credit_history_length" name="credit_history_length" inputmode="decimal" step="any" min="0" max="100" required aria-describedby="credit_history_length_hint">
                                 <span class="unit">years</span>
                             </div>
-                            <p class="hint" id="credit_history_length_hint" data-hint="Since the first credit account"></p>
+                            <p class="hint" id="credit_history_length_hint" data-hint="Since earliest credit line"></p>
                         </div>
                         <div class="field">
                             <label for="verification_status">Income verification</label>
@@ -61,20 +70,20 @@
                                     <option value="Not Verified">Not verified</option>
                                 </select>
                             </div>
-                            <p class="hint" id="verification_status_hint" data-hint="As recorded by the lender"></p>
+                            <p class="hint" id="verification_status_hint" data-hint="Status of income verification"></p>
                         </div>
                     </div>
                 </fieldset>
 
                 <fieldset>
-                    <legend>Loan</legend>
+                    <legend>Facility</legend>
                     <div class="fields">
                         <div class="field">
                             <label for="loan_amount">Loan amount</label>
                             <div class="control"><span class="unit">$</span>
                                 <input type="number" id="loan_amount" name="loan_amount" inputmode="decimal" step="any" min="1" required aria-describedby="loan_amount_hint">
                             </div>
-                            <p class="hint" id="loan_amount_hint" data-hint="Compared with income"></p>
+                            <p class="hint" id="loan_amount_hint" data-hint="Principal requested"></p>
                         </div>
                         <div class="field">
                             <label for="int_rate">Interest rate</label>
@@ -82,7 +91,7 @@
                                 <input type="number" id="int_rate" name="int_rate" inputmode="decimal" step="any" min="0" max="50" required aria-describedby="int_rate_hint">
                                 <span class="unit">%</span>
                             </div>
-                            <p class="hint" id="int_rate_hint" data-hint="Rate offered on this loan"></p>
+                            <p class="hint" id="int_rate_hint" data-hint="Annual rate on the facility"></p>
                         </div>
                         <div class="field">
                             <label for="purpose">Purpose</label>
@@ -105,7 +114,7 @@
                                     <option value="other">Other</option>
                                 </select>
                             </div>
-                            <p class="hint" id="purpose_hint" data-hint="Main use of the money"></p>
+                            <p class="hint" id="purpose_hint" data-hint="Stated use of funds"></p>
                         </div>
                     </div>
                 </fieldset>
@@ -118,7 +127,7 @@
                             <div class="control"><span class="unit">$</span>
                                 <input type="number" id="total_rev_hi_lim" name="total_rev_hi_lim" inputmode="decimal" step="any" min="0" aria-describedby="total_rev_hi_lim_hint">
                             </div>
-                            <p class="hint" id="total_rev_hi_lim_hint" data-hint="Across all cards and lines"></p>
+                            <p class="hint" id="total_rev_hi_lim_hint" data-hint="Total across revolving accounts"></p>
                         </div>
                         <div class="field">
                             <label for="tot_cur_bal">Total current balance</label>
@@ -133,23 +142,22 @@
                                 <input type="number" id="revol_util" name="revol_util" inputmode="decimal" step="any" min="0" max="100" aria-describedby="revol_util_hint">
                                 <span class="unit">%</span>
                             </div>
-                            <p class="hint" id="revol_util_hint" data-hint="Share of the limit in use"></p>
+                            <p class="hint" id="revol_util_hint" data-hint="Balance as a share of limit"></p>
                         </div>
                     </div>
-                    <p class="fieldset-note">A blank field is scored as its least favourable value.</p>
+                    <p class="fieldset-note">Fields left blank are assigned the least favourable attribute.</p>
                 </fieldset>
 
                 <div class="actions">
-                    <button type="submit" class="btn btn-primary" id="submitBtn">Score applicant</button>
-                    <button type="button" class="btn" id="clearBtn">Clear</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Calculate score</button>
                 </div>
             </form>
         </section>
 
         <section class="results" id="results" aria-labelledby="resultsHeading" tabindex="-1">
-            <h2 id="resultsHeading">Assessment</h2>
+            <h2 id="resultsHeading">Risk assessment</h2>
 
-            <p class="empty" id="resultEmpty">Complete the applicant and loan fields to see a score.</p>
+            <p class="empty" id="resultEmpty">Enter the required application details to generate an assessment.</p>
             <p class="alert" id="resultError" role="alert" hidden></p>
 
             <div id="resultBody" hidden>
@@ -163,7 +171,7 @@
                         <span class="grade" id="riskLevel"></span>
                     </div>
                     <div class="stat">
-                        <span class="stat-label">Default probability</span>
+                        <span class="stat-label">Probability of default</span>
                         <span class="stat-value" id="defaultProb"></span>
                     </div>
                 </div>
@@ -177,12 +185,12 @@
                     <div class="scale-axis" id="scaleAxis"></div>
                 </div>
 
-                <h3>Why this score</h3>
+                <h3>Score attribution</h3>
                 <table class="breakdown">
                     <thead>
                         <tr>
-                            <th scope="col">Input</th>
-                            <th scope="col">Value</th>
+                            <th scope="col">Characteristic</th>
+                            <th scope="col">Attribute</th>
                             <th scope="col" class="num">Points</th>
                         </tr>
                     </thead>
@@ -196,7 +204,7 @@
                 </table>
 
                 <p class="note" id="resultMessage"></p>
-                <p class="note">Grades are internal to this model, not agency credit ratings. Use the probability to rank applicants rather than as a lifetime default forecast.</p>
+                <p class="note">Grades follow an internal scale and are not external agency ratings. Probability of default is a model estimate intended for rank-ordering applicants.</p>
             </div>
         </section>
     </main>
@@ -204,12 +212,12 @@
     <a class="mobilebar" id="mobileBar" href="#results" hidden>
         <span class="mobilebar-score" id="mobileScore"></span>
         <span class="mobilebar-grade" id="mobileGrade"></span>
-        <span class="mobilebar-link">See assessment</span>
+        <span class="mobilebar-link">View assessment</span>
     </a>
 
     <footer class="wrap footer">
-        <span>Logistic regression on WOE-binned LendingClub loans. 600 points at 50:1 odds, 20 points to double the odds.</span>
-        <span>Built by Tri Thai-Huu</span>
+        <span>&copy; 2025 Credit Risk Scorecard. Built by Tri Thai-Huu.</span>
+        <span>Logistic regression on WOE-binned LendingClub loans. 600 points at 50:1 odds, PDO 20.</span>
     </footer>
 
     <script src="/static/js/app.js"></script>

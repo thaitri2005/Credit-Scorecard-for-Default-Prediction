@@ -11,6 +11,10 @@
     --accent: #0b5aa8;
     --accent-ink: #ffffff;
     --accent-soft: #e4eef8;
+    --mast: #10293f;
+    --mast-ink: #ffffff;
+    --mast-muted: #b4c4d3;
+    --mast-line: #10293f;
     --danger: #b3261e;
     --danger-soft: #fbe9e7;
     --positive: #1b7a52;
@@ -32,23 +36,24 @@
     --radius: 6px;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #10171e;
-        --surface: #18222c;
-        --ink: #e6ecf1;
-        --muted: #9aa8b5;
-        --line: #2c3945;
-        --line-strong: #5d6c7a;
-        --accent: #6cb1f2;
-        --accent-ink: #0b1620;
-        --accent-soft: #1d3247;
-        --danger: #f2877e;
-        --danger-soft: #3a1f1d;
-        --positive: #5cc596;
-        --negative: #ee8b73;
-        color-scheme: dark;
-    }
+/* Light is the default; dark is opt-in from the masthead toggle. */
+:root[data-theme="dark"] {
+    --bg: #10171e;
+    --surface: #18222c;
+    --ink: #e6ecf1;
+    --muted: #9aa8b5;
+    --line: #2c3945;
+    --line-strong: #5d6c7a;
+    --accent: #6cb1f2;
+    --accent-ink: #0b1620;
+    --accent-soft: #1d3247;
+    --danger: #f2877e;
+    --danger-soft: #3a1f1d;
+    --positive: #5cc596;
+    --negative: #ee8b73;
+    color-scheme: dark;
+    --mast: #0b141c;
+    --mast-line: #2c3945;
 }
 
 *,
@@ -62,7 +67,7 @@ body {
     background: var(--bg);
     color: var(--ink);
     font-family: var(--font-text);
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 }
@@ -92,56 +97,101 @@ a {
     outline-offset: 2px;
 }
 
-/* Top bar */
-.topbar {
-    background: var(--surface);
-    border-bottom: 1px solid var(--line);
+/* Masthead */
+.masthead {
+    background: var(--mast);
+    border-bottom: 1px solid var(--mast-line);
+    color: var(--mast-ink);
 }
 
-.topbar-inner {
+.masthead-inner {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    height: 52px;
+    gap: 10px 24px;
+    padding-block: 16px;
+}
+
+.masthead-title {
+    display: flex;
+    flex-direction: column;
 }
 
 .brand {
+    font-size: 21px;
     font-weight: 600;
     letter-spacing: -0.01em;
+    line-height: 1.25;
 }
 
-.topnav {
-    display: flex;
-    gap: 20px;
+.brand-sub {
     font-size: 14px;
+    color: var(--mast-muted);
 }
 
-.topnav a {
-    color: var(--muted);
+.masthead-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 22px;
+    font-size: 14.5px;
+}
+
+.masthead-nav a {
+    color: var(--mast-muted);
     text-decoration: none;
 }
 
-.topnav a:hover {
-    color: var(--ink);
+.masthead-nav a:hover {
+    color: var(--mast-ink);
     text-decoration: underline;
+}
+
+.theme-toggle {
+    font: inherit;
+    color: var(--mast-ink);
+    background: transparent;
+    border: 1px solid var(--mast-muted);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.masthead :focus-visible {
+    outline-color: var(--mast-ink);
 }
 
 /* Workspace */
 .workspace {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
-    gap: 28px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 470px);
+    gap: 32px;
     align-items: start;
-    padding-block: 28px 40px;
+    padding-block: 32px 44px;
 }
 
 .inputs {
     min-width: 0;
 }
 
+.section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.section-head .btn {
+    flex: none;
+}
+
 h1 {
-    font-size: 24px;
+    font-size: 30px;
     font-weight: 600;
     letter-spacing: -0.015em;
     line-height: 1.2;
@@ -163,7 +213,7 @@ h1 {
 }
 
 .presets-label {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -212,7 +262,7 @@ fieldset {
 legend {
     float: left;
     width: 100%;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -240,7 +290,7 @@ legend {
 
 label {
     display: block;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     margin-bottom: 5px;
 }
@@ -268,8 +318,8 @@ label {
     flex: 1;
     min-width: 0;
     width: 100%;
-    height: 38px;
-    padding: 0 10px;
+    height: 42px;
+    padding: 0 12px;
     border: 0;
     background: transparent;
     color: var(--ink);
@@ -307,9 +357,9 @@ label {
 /* One fixed-height line holds either the hint or the error, so showing an
    error never moves the layout. */
 .hint {
-    min-height: 20px;
-    margin-top: 3px;
-    font-size: 12.5px;
+    min-height: 21px;
+    margin-top: 4px;
+    font-size: 13.5px;
     color: var(--muted);
 }
 
@@ -327,7 +377,7 @@ label {
 
 .fieldset-note {
     clear: both;
-    font-size: 12.5px;
+    font-size: 13.5px;
     color: var(--muted);
     padding-bottom: 4px;
 }
@@ -341,8 +391,8 @@ label {
 .btn {
     font: inherit;
     font-weight: 500;
-    height: 40px;
-    padding: 0 18px;
+    height: 44px;
+    padding: 0 20px;
     border: 1px solid var(--line-strong);
     border-radius: var(--radius);
     background: var(--surface);
@@ -373,7 +423,7 @@ label {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: 20px 22px 18px;
+    padding: 24px 26px 22px;
     scroll-margin-top: 16px;
 }
 
@@ -386,7 +436,7 @@ label {
 }
 
 h2 {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -427,20 +477,20 @@ h2 {
 }
 
 .stat-label {
-    font-size: 12.5px;
+    font-size: 13.5px;
     color: var(--muted);
 }
 
 .stat-value {
     font-family: var(--font-data);
-    font-size: 22px;
+    font-size: 26px;
     font-weight: 500;
     line-height: 1.2;
     font-variant-numeric: tabular-nums;
 }
 
 .stat-value.score {
-    font-size: 44px;
+    font-size: 56px;
     font-weight: 600;
     letter-spacing: -0.03em;
     line-height: 1;
@@ -450,10 +500,10 @@ h2 {
     --grade: var(--line-strong);
     align-self: flex-start;
     font-family: var(--font-data);
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 600;
     line-height: 1;
-    padding: 6px 10px;
+    padding: 7px 12px;
     border-radius: 4px;
     border: 2px solid var(--grade);
     background: color-mix(in srgb, var(--grade) 16%, var(--surface));
@@ -470,7 +520,8 @@ h2 {
 .grade-C { --grade: var(--g-c); }
 
 .verdict {
-    margin-top: 10px;
+    margin-top: 12px;
+    font-size: 17px;
     font-weight: 500;
 }
 
@@ -487,7 +538,7 @@ h2 {
 .scale-bands {
     display: flex;
     gap: 2px;
-    height: 12px;
+    height: 14px;
 }
 
 .scale-band {
@@ -524,7 +575,7 @@ h2 {
     gap: 2px;
     margin-top: 5px;
     font-family: var(--font-data);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--muted);
 }
 
@@ -540,8 +591,8 @@ h2 {
 
 /* Points breakdown */
 h3 {
-    margin-top: 24px;
-    font-size: 15px;
+    margin-top: 28px;
+    font-size: 17px;
     font-weight: 600;
 }
 
@@ -549,7 +600,7 @@ h3 {
     width: 100%;
     margin-top: 8px;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .breakdown th,
@@ -562,7 +613,7 @@ h3 {
 }
 
 .breakdown thead th {
-    font-size: 12.5px;
+    font-size: 13.5px;
     color: var(--muted);
     padding-top: 0;
 }
@@ -596,7 +647,7 @@ h3 {
 
 .note {
     margin-top: 12px;
-    font-size: 12.5px;
+    font-size: 13.5px;
     color: var(--muted);
 }
 
@@ -611,7 +662,7 @@ h3 {
     justify-content: space-between;
     gap: 6px 24px;
     padding-block: 0 28px;
-    font-size: 12.5px;
+    font-size: 13.5px;
     color: var(--muted);
 }
 
@@ -624,7 +675,11 @@ h3 {
     .workspace {
         grid-template-columns: minmax(0, 1fr);
         gap: 20px;
-        padding-block: 20px 28px;
+        padding-block: 22px 28px;
+    }
+
+    h1 {
+        font-size: 26px;
     }
 
     .results {
@@ -654,7 +709,7 @@ h3 {
 
     .mobilebar-score {
         font-family: var(--font-data);
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 600;
     }
 
@@ -685,7 +740,7 @@ h3 {
     }
 
     .stat-value.score {
-        font-size: 38px;
+        font-size: 46px;
     }
 }
 
